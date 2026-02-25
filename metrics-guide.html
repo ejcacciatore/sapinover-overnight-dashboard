@@ -969,5 +969,81 @@
     <p style="margin-top: 12px;"><a href="index.html">Sapinover LLC</a> &middot; Market Microstructure Research &middot; 2026</p>
 </div>
 
+<!-- Login Overlay -->
+<div id="loginOverlay" style="
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #0a0a0a; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Outfit', sans-serif;
+">
+    <div style="text-align: center; max-width: 400px; padding: 40px;">
+        <div style="font-weight: 700; font-size: 1.1rem; letter-spacing: 0.25em; text-transform: uppercase; color: #8a8a96; margin-bottom: 8px;">SAPINOVER</div>
+        <h2 style="font-family: 'Source Serif 4', serif; font-size: 1.6rem; color: #f0f0f2; margin-bottom: 6px;">
+            Metrics Guide
+        </h2>
+        <p style="color: #8a8a96; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 32px;">
+            Authorized Access Only
+        </p>
+        <form id="loginForm" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="password" id="passwordInput" placeholder="Enter password"
+                autocomplete="current-password"
+                style="
+                    padding: 12px 16px; border-radius: 8px;
+                    border: 1px solid #1e1e24; background: #141418;
+                    color: #f0f0f2; font-size: 1rem;
+                    font-family: 'JetBrains Mono', monospace;
+                    outline: none; text-align: center;
+                "
+                onfocus="this.style.borderColor='#f5a623'" onblur="this.style.borderColor='#1e1e24'"
+            >
+            <button type="submit" style="
+                padding: 12px 24px; border-radius: 8px; border: none;
+                background: #f5a623; color: #0a0a0a;
+                font-size: 0.95rem; font-weight: 600;
+                cursor: pointer; transition: opacity 0.2s;
+            " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                View Guide
+            </button>
+        </form>
+        <p id="loginError" style="color: #ef5350; font-size: 0.85rem; margin-top: 12px; display: none;">
+            Invalid password. Please try again.
+        </p>
+    </div>
+</div>
+
+<script>
+// SHA-256 hash of the password for comparison
+const PASS_HASH = 'a0688e2211817fe9994b8b083fd8adfcba5c5e8acae2d2e5e7a660ed174513ee';
+
+async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function handleLogin(e) {
+    if (e) e.preventDefault();
+    const pw = document.getElementById('passwordInput').value;
+    if (!pw) return;
+    const hash = await sha256(pw);
+    if (hash === PASS_HASH) {
+        sessionStorage.setItem('sp_auth_guide', hash);
+        document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+        document.getElementById('loginError').style.display = 'block';
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('passwordInput').focus();
+    }
+}
+
+// Check session on load
+(async () => {
+    const saved = sessionStorage.getItem('sp_auth_guide');
+    if (saved && saved === PASS_HASH) {
+        document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+        document.getElementById('passwordInput').focus();
+    }
+})();
+</script>
 </body>
 </html>

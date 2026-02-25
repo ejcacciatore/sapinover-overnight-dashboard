@@ -116,6 +116,147 @@
         · <a href="metrics-guide.html" style="color: #f5a623; text-decoration: none;">Metrics Guide</a>
     </footer>
 
-    <script src="dashboard.js?v=4.1"></script>
+    <!-- Login Overlay -->
+    <div id="loginOverlay" style="
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #0a0a0a; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Outfit', 'Inter', sans-serif;
+    ">
+        <div style="text-align: center; max-width: 400px; padding: 40px;">
+            <img src="FullLogo_NoBuffer__1_.png" alt="Sapinover LLC" style="height: 36px; margin-bottom: 24px; opacity: 0.9;">
+            <h2 style="font-family: 'Source Serif 4', serif; font-size: 1.6rem; color: #f0f0f2; margin-bottom: 6px;">
+                Overnight Trading Analysis
+            </h2>
+            <p style="color: #8a8a96; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 32px;">
+                Authorized Access Only
+            </p>
+            <form id="loginForm" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="password" id="passwordInput" placeholder="Enter password"
+                    autocomplete="current-password"
+                    style="
+                        padding: 12px 16px; border-radius: 8px;
+                        border: 1px solid #1e1e24; background: #141418;
+                        color: #f0f0f2; font-size: 1rem;
+                        font-family: 'JetBrains Mono', monospace;
+                        outline: none; text-align: center;
+                    "
+                    onfocus="this.style.borderColor='#f5a623'" onblur="this.style.borderColor='#1e1e24'"
+                >
+                <button type="submit" id="loginBtn" style="
+                    padding: 12px 24px; border-radius: 8px; border: none;
+                    background: #f5a623; color: #0a0a0a;
+                    font-size: 0.95rem; font-weight: 600;
+                    cursor: pointer; transition: opacity 0.2s;
+                " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                    Access Dashboard
+                </button>
+            </form>
+            <p id="loginError" style="color: #ef5350; font-size: 0.85rem; margin-top: 12px; display: none;">
+                Invalid password. Please try again.
+            </p>
+            <p id="loginStatus" style="color: #8a8a96; font-size: 0.82rem; margin-top: 12px; display: none;">
+                Decrypting data...
+            </p>
+        </div>
+    </div>
+
+    <script src="dashboard.js?v=4.2"></script>
+
+    <!-- Auth + Decryption Script -->
+    <script>
+    const PBKDF2_ITERATIONS = 100000;
+
+    async function deriveKey(password, salt) {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt: salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['decrypt']
+        );
+    }
+
+    async function decryptData(password) {
+        const response = await fetch('data.enc');
+        if (!response.ok) throw new Error('Could not load encrypted data');
+        const b64 = await response.text();
+
+        // Decode base64
+        const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+        // Extract salt(16) + iv(12) + ciphertext+tag
+        const salt = raw.slice(0, 16);
+        const iv = raw.slice(16, 28);
+        const ciphertext = raw.slice(28);
+
+        // Derive key and decrypt
+        const key = await deriveKey(password, salt);
+        const decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            ciphertext
+        );
+
+        const text = new TextDecoder().decode(decrypted);
+        return JSON.parse(text);
+    }
+
+    async function handleLogin(e) {
+        if (e) e.preventDefault();
+        const password = document.getElementById('passwordInput').value;
+        if (!password) return;
+
+        const errorEl = document.getElementById('loginError');
+        const statusEl = document.getElementById('loginStatus');
+        const btnEl = document.getElementById('loginBtn');
+
+        errorEl.style.display = 'none';
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Decrypting data...';
+        btnEl.disabled = true;
+        btnEl.textContent = 'Decrypting...';
+
+        try {
+            const json = await decryptData(password);
+
+            // Save to session
+            sessionStorage.setItem('sp_auth', password);
+
+            // Hide overlay
+            document.getElementById('loginOverlay').style.display = 'none';
+
+            // Initialize dashboard with decrypted data
+            window.initDashboard(json);
+        } catch (err) {
+            errorEl.style.display = 'block';
+            statusEl.style.display = 'none';
+            btnEl.disabled = false;
+            btnEl.textContent = 'Access Dashboard';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+
+    // Check session on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+        const saved = sessionStorage.getItem('sp_auth');
+        if (saved) {
+            try {
+                const json = await decryptData(saved);
+                document.getElementById('loginOverlay').style.display = 'none';
+                window.initDashboard(json);
+            } catch {
+                sessionStorage.removeItem('sp_auth');
+            }
+        } else {
+            document.getElementById('passwordInput').focus();
+        }
+    });
+    </script>
 </body>
 </html>

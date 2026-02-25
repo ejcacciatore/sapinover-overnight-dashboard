@@ -39,25 +39,33 @@ let RISK_STATE = { confidenceLevel: 95 };
 // INITIALIZATION
 // ============================================================================
 
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Setup tab navigation
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // Load data
-    await loadData();
+    // Data loading is triggered by auth script after password validation
+    // See index.html login overlay for the initDashboard() call
 });
 
-async function loadData() {
+// initDashboard is called by the auth script with decrypted JSON
+window.initDashboard = async function(json) {
+    await loadData(json);
+};
+
+async function loadData(json) {
     const progressBar = document.getElementById('loadingBar');
     try {
         if (progressBar) progressBar.style.width = '10%';
-        const response = await fetch('data.json');
-        if (!response.ok) throw new Error('Failed to load data.json');
-        if (progressBar) progressBar.style.width = '35%';
 
-        const json = await response.json();
+        // If no json passed, try direct fetch (local dev fallback)
+        if (!json) {
+            const response = await fetch('data.json');
+            if (!response.ok) throw new Error('Failed to load data.json');
+            json = await response.json();
+        }
+
         if (progressBar) progressBar.style.width = '60%';
         
         META = json.meta;
