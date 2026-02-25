@@ -3696,8 +3696,19 @@ function renderMethodologyTab() {
                 <li>Market reference prices: Public market data via financial APIs</li>
                 <li>Symbol classifications: Pattern detection and market data enrichment</li>
             </ul>
+
+            <div style="margin: 32px 0; padding: 20px 24px; background: rgba(245,166,35,0.08); border: 1px solid rgba(245,166,35,0.2); border-radius: 8px;">
+                <h3 style="margin: 0 0 8px; color: #f5a623;">Detailed Metrics Guide</h3>
+                <p style="margin: 0 0 12px; color: #8a8a96;">
+                    For a comprehensive explanation of every metric with formulas, visual diagrams, and
+                    worked examples using real data (AAPL, TSLA, MU, SPY), see the full metrics guide.
+                </p>
+                <a href="metrics-guide.html" style="display: inline-block; padding: 8px 20px; background: #f5a623; color: #0a0a0a; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem;">
+                    View Metrics Guide &rarr;
+                </a>
+            </div>
         </div>
-        
+
         <div class="disclaimer">
             <div class="disclaimer-title">Disclaimer</div>
             <p>
