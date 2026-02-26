@@ -399,651 +399,149 @@
 </head>
 <body>
 
-<div class="header">
-    <div style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">SAPINOVER</div>
-    <h1>Overnight ATS <span>Metrics Guide</span></h1>
-    <div class="subtitle">How We Measure Overnight Execution Quality</div>
-    <a href="index.html" class="back-link">&larr; Back to Dashboard</a>
-</div>
+    <!-- Content container: populated after decryption -->
+    <div id="guideContent"></div>
 
-<div class="container">
-
-    <!-- TOC -->
-    <div class="toc">
-        <h2>Contents</h2>
-        <div class="toc-grid">
-            <a href="#overview"><span class="num">01</span> The Overnight Session</a>
-            <a href="#prior-close"><span class="num">02</span> Prior Close</a>
-            <a href="#vwap"><span class="num">03</span> Overnight VWAP</a>
-            <a href="#next-open"><span class="num">04</span> Next Day Open</a>
-            <a href="#timing-diff"><span class="num">05</span> Timing Differential</a>
-            <a href="#ref-gap"><span class="num">06</span> Reference Gap</a>
-            <a href="#total-gap"><span class="num">07</span> Total Overnight Gap</a>
-            <a href="#direction"><span class="num">08</span> Gap Direction</a>
-            <a href="#consistency"><span class="num">09</span> Directional Consistency</a>
-            <a href="#captured-alpha"><span class="num">10</span> Captured Alpha</a>
-            <a href="#winsorization"><span class="num">11</span> Winsorization</a>
-            <a href="#examples"><span class="num">12</span> Worked Examples</a>
-        </div>
-    </div>
-
-    <!-- 1. Overview -->
-    <div class="section">
-        <span class="section-anchor" id="overview"></span>
-        <h2>01. The Overnight Session</h2>
-        <p>Virtually all equity returns occur between market close (4:00 PM ET) and the next morning's open (9:30 AM ET), not during regular trading hours. This is the <strong>overnight return anomaly</strong>, documented in academic literature.</p>
-        <p>Alternative Trading Systems (ATS) operate during this window, allowing institutional participants to trade equities when exchanges are closed. Our research analyzes execution quality in these overnight sessions.</p>
-
-        <div class="timeline-diagram">
-            <div class="timeline-labels" style="margin-bottom: 8px;">
-                <div class="timeline-label">
-                    <div class="time">4:00 PM</div>
-                    <div class="desc">Market Close</div>
-                    <div class="desc" style="color: var(--amber);">Prior Close</div>
-                </div>
-                <div class="timeline-label active">
-                    <div class="time">8 PM - 4 AM</div>
-                    <div class="desc">Overnight Session</div>
-                    <div class="desc" style="color: var(--amber);">ATS VWAP</div>
-                </div>
-                <div class="timeline-label">
-                    <div class="time">9:30 AM</div>
-                    <div class="desc">Market Open</div>
-                    <div class="desc" style="color: var(--amber);">Next Open</div>
-                </div>
-            </div>
-            <div class="timeline-bar"></div>
-            <p style="text-align:center; font-size: 0.82rem; color: var(--text-muted); margin: 0;">
-                Three reference prices define every overnight observation. The relationships between them determine all metrics.
+    <!-- Login Overlay -->
+    <div id="loginOverlay" style="
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #0a0a0a; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Outfit', sans-serif;
+    ">
+        <div style="text-align: center; max-width: 400px; padding: 40px;">
+            <div style="font-weight: 700; font-size: 1.1rem; letter-spacing: 0.25em; text-transform: uppercase; color: #8a8a96; margin-bottom: 8px;">SAPINOVER</div>
+            <h2 style="font-family: 'Source Serif 4', serif; font-size: 1.6rem; color: #f0f0f2; margin-bottom: 6px;">
+                Metrics Guide
+            </h2>
+            <p style="color: #8a8a96; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 32px;">
+                Authorized Access Only
+            </p>
+            <form id="loginForm" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="password" id="passwordInput" placeholder="Enter password"
+                    autocomplete="current-password"
+                    style="
+                        padding: 12px 16px; border-radius: 8px;
+                        border: 1px solid #1e1e24; background: #141418;
+                        color: #f0f0f2; font-size: 1rem;
+                        font-family: 'JetBrains Mono', monospace;
+                        outline: none; text-align: center;
+                    "
+                    onfocus="this.style.borderColor='#f5a623'" onblur="this.style.borderColor='#1e1e24'"
+                >
+                <button type="submit" id="loginBtn" style="
+                    padding: 12px 24px; border-radius: 8px; border: none;
+                    background: #f5a623; color: #0a0a0a;
+                    font-size: 0.95rem; font-weight: 600;
+                    cursor: pointer; transition: opacity 0.2s;
+                " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                    View Guide
+                </button>
+            </form>
+            <p id="loginError" style="color: #ef5350; font-size: 0.85rem; margin-top: 12px; display: none;">
+                Invalid password. Please try again.
+            </p>
+            <p id="loginStatus" style="color: #8a8a96; font-size: 0.82rem; margin-top: 12px; display: none;">
+                Decrypting...
             </p>
         </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value">60,955</div>
-                <div class="stat-label">Observations</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">79</div>
-                <div class="stat-label">Trading Days</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">$194.2B</div>
-                <div class="stat-label">Total Notional</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">3,272</div>
-                <div class="stat-label">Unique Symbols</div>
-            </div>
-        </div>
     </div>
 
-    <!-- 2. Prior Close -->
-    <div class="section">
-        <span class="section-anchor" id="prior-close"></span>
-        <h2>02. Prior Close</h2>
-        <p>The <strong>Prior Close</strong> is the last regular-session closing price before the overnight session begins. It serves as the baseline reference for all basis point calculations.</p>
-        <p>We source this from Yahoo Finance market data. All percentage and basis point calculations use Prior Close as the denominator to normalize across different price levels.</p>
+    <!-- Auth + Decryption Script -->
+    <script>
+    const PBKDF2_ITERATIONS = 100000;
 
-        <div class="callout callout-info">
-            <strong>Why Prior Close as denominator?</strong> A $1 move on a $20 stock (50 bps) is not equivalent to a $1 move on a $500 stock (2 bps). Normalizing by Prior Close lets us compare execution quality across all price levels on the same scale.
-        </div>
-    </div>
-
-    <!-- 3. VWAP -->
-    <div class="section">
-        <span class="section-anchor" id="vwap"></span>
-        <h2>03. Overnight VWAP</h2>
-        <p>The <strong>Volume-Weighted Average Price (VWAP)</strong> is the average price at which shares traded during the overnight ATS session, weighted by volume at each price level.</p>
-        <p>VWAP represents the <strong>actual execution price</strong> that participants received. It is the single most important price for measuring execution quality because it reflects where real money changed hands.</p>
-
-        <div class="formula-box">
-            <div class="label">Definition</div>
-            <div class="formula">VWAP = Sum(Price_i x Volume_i) / Sum(Volume_i)</div>
-            <div class="note">Computed across all trades in the overnight session for each symbol</div>
-        </div>
-
-        <div class="callout callout-insight">
-            <strong>Key insight:</strong> VWAP is not a theoretical price. It is the dollar-weighted average of every executed trade. If 80% of volume traded at $100 and 20% at $102, the VWAP is $100.40, not $101.
-        </div>
-    </div>
-
-    <!-- 4. Next Open -->
-    <div class="section">
-        <span class="section-anchor" id="next-open"></span>
-        <h2>04. Next Day Open</h2>
-        <p>The <strong>Next Day Open</strong> is the opening price when the regular session begins at 9:30 AM ET. This is the first price that all market participants can access.</p>
-        <p>The relationship between the overnight VWAP and Next Day Open determines whether overnight participants executed at a better or worse price than what was available at the open. This is the core of execution timing analysis.</p>
-    </div>
-
-    <!-- 5. Timing Differential -->
-    <div class="section">
-        <span class="section-anchor" id="timing-diff"></span>
-        <h2>05. Timing Differential (bps)</h2>
-        <p>The <strong>Timing Differential</strong> measures the difference between where you executed overnight (VWAP) and where the stock opened the next morning, expressed in basis points relative to Prior Close.</p>
-
-        <div class="formula-box">
-            <div class="label">Formula</div>
-            <div class="formula">Timing Differential = (Next_Open - VWAP) / Prior_Close x 10,000</div>
-            <div class="note">Result is in basis points (1 bps = 0.01%)</div>
-        </div>
-
-        <h3>What the sign tells you</h3>
-        <p><strong>Positive value:</strong> The stock opened higher than where it was purchased overnight. If you bought at VWAP and the stock opens above that price, the gap represents potential unrealized gain at the open.</p>
-        <p><strong>Negative value:</strong> The stock opened lower than the overnight VWAP. If you bought at VWAP and the stock opens below, the gap represents potential unrealized loss at the open.</p>
-
-        <div class="callout callout-warning">
-            <strong>Important nuance:</strong> The sign alone does not determine good or bad execution. Direction matters. Buying overnight with a negative Timing Differential can be favorable if the stock was gapping down and you bought at a price between the prior close and the lower open. See <a href="#consistency" style="color: var(--amber);">Directional Consistency</a> for the full picture.
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" style="color: var(--text);">-39.2</div>
-                <div class="stat-label">Mean (bps)</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color: var(--text);">-20.1</div>
-                <div class="stat-label">Median (bps)</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 6. Reference Gap -->
-    <div class="section">
-        <span class="section-anchor" id="ref-gap"></span>
-        <h2>06. Reference Gap (bps)</h2>
-        <p>The <strong>Reference Gap</strong> measures the total overnight price movement from the prior close to the overnight VWAP. It represents how much the price moved before or during the overnight session, independent of execution.</p>
-
-        <div class="formula-box">
-            <div class="label">Formula</div>
-            <div class="formula">Reference Gap = (VWAP - Prior_Close) / Prior_Close x 10,000</div>
-            <div class="note">Measures the "gap" from close to overnight execution level</div>
-        </div>
-
-        <p>A large positive Reference Gap means the overnight VWAP was well above the prior close. Participants paid more than the closing price. A negative Reference Gap means overnight trading occurred below the prior close.</p>
-    </div>
-
-    <!-- 7. Total Overnight Gap -->
-    <div class="section">
-        <span class="section-anchor" id="total-gap"></span>
-        <h2>07. Total Overnight Gap (bps)</h2>
-        <p>The <strong>Total Overnight Gap</strong> captures the full close-to-open price movement. It is the sum of the Reference Gap and the Timing Differential.</p>
-
-        <div class="formula-box">
-            <div class="label">Formula</div>
-            <div class="formula">Total Gap = (Next_Open - Prior_Close) / Prior_Close x 10,000</div>
-            <div class="note">Equivalent to: Reference Gap + Timing Differential</div>
-        </div>
-
-        <div class="callout callout-info">
-            <strong>Decomposition:</strong> The Total Overnight Gap breaks into two components. The Reference Gap shows how much moved before/during the overnight session. The Timing Differential shows how much additional movement occurred between the VWAP and the open. Together they account for the entire close-to-open move.
-        </div>
-
-        <div class="formula-box">
-            <div class="label">Relationship</div>
-            <div class="formula">Total Gap = Reference Gap + Timing Differential</div>
-            <div class="note">
-                Prior Close &rarr; [Reference Gap] &rarr; VWAP &rarr; [Timing Diff] &rarr; Next Open
-            </div>
-        </div>
-    </div>
-
-    <!-- 8. Gap Direction -->
-    <div class="section">
-        <span class="section-anchor" id="direction"></span>
-        <h2>08. Gap Direction</h2>
-        <p><strong>Gap Direction</strong> classifies whether the stock gapped up or down from the prior close to the next open.</p>
-
-        <div class="formula-box">
-            <div class="label">Logic</div>
-            <div class="formula">
-                If Next_Open > Prior_Close &rarr; <span style="color: var(--green);">UP</span><br>
-                If Next_Open &le; Prior_Close &rarr; <span style="color: var(--red);">DOWN</span>
-            </div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" style="color: var(--green);">53.5%</div>
-                <div class="stat-label">UP Gaps</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color: var(--red);">46.5%</div>
-                <div class="stat-label">DOWN Gaps</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 9. Directional Consistency -->
-    <div class="section">
-        <span class="section-anchor" id="consistency"></span>
-        <h2>09. Directional Consistency</h2>
-        <p><strong>Directional Consistency</strong> (also called Price Continuity) answers the key question: <em>did the overnight VWAP land between the prior close and the next open?</em></p>
-        <p>When the VWAP falls between those two prices, the overnight execution was aligned with the direction of the overnight move. The participant bought (or sold) at a price that was better than the open.</p>
-
-        <div class="formula-box">
-            <div class="label">Logic</div>
-            <div class="formula">
-                If gap is <span style="color: var(--green);">UP</span> and Timing Diff > 0 &rarr; <span style="color: var(--green);">Consistent</span><br>
-                If gap is <span style="color: var(--red);">DOWN</span> and Timing Diff < 0 &rarr; <span style="color: var(--green);">Consistent</span><br>
-                Otherwise &rarr; <span style="color: var(--red);">Inconsistent</span>
-            </div>
-        </div>
-
-        <h3>Visual intuition</h3>
-
-        <div class="example">
-            <span class="tag tag-consistent">Consistent (UP gap)</span>
-            <p style="color: var(--text); font-size: 0.9rem; margin-bottom: 12px;">Stock gaps up. VWAP is between close and open. Bought below where it opened.</p>
-            <div class="price-flow">
-                <div class="price-node">
-                    <div class="label">Prior Close</div>
-                    <div class="value">$100.00</div>
-                </div>
-                <div class="price-arrow up">&rarr;</div>
-                <div class="price-node" style="border-color: var(--amber);">
-                    <div class="label" style="color: var(--amber);">VWAP</div>
-                    <div class="value" style="color: var(--amber);">$101.50</div>
-                </div>
-                <div class="price-arrow up">&rarr;</div>
-                <div class="price-node">
-                    <div class="label">Next Open</div>
-                    <div class="value" style="color: var(--green);">$103.00</div>
-                </div>
-            </div>
-            <p style="font-size: 0.85rem;">Timing Diff = +150 bps. The open was above VWAP. Execution was favorable.</p>
-        </div>
-
-        <div class="example">
-            <span class="tag tag-consistent">Consistent (DOWN gap)</span>
-            <p style="color: var(--text); font-size: 0.9rem; margin-bottom: 12px;">Stock gaps down. VWAP is between close and open. Sold above where it opened.</p>
-            <div class="price-flow">
-                <div class="price-node">
-                    <div class="label">Prior Close</div>
-                    <div class="value">$100.00</div>
-                </div>
-                <div class="price-arrow down">&rarr;</div>
-                <div class="price-node" style="border-color: var(--amber);">
-                    <div class="label" style="color: var(--amber);">VWAP</div>
-                    <div class="value" style="color: var(--amber);">$98.50</div>
-                </div>
-                <div class="price-arrow down">&rarr;</div>
-                <div class="price-node">
-                    <div class="label">Next Open</div>
-                    <div class="value" style="color: var(--red);">$97.00</div>
-                </div>
-            </div>
-            <p style="font-size: 0.85rem;">Timing Diff = -150 bps. The open was below VWAP. If you sold overnight, you sold at a higher price than the open.</p>
-        </div>
-
-        <div class="example">
-            <span class="tag tag-inconsistent">Inconsistent</span>
-            <p style="color: var(--text); font-size: 0.9rem; margin-bottom: 12px;">Stock gaps down, but VWAP is above both close and open. Execution was not aligned with direction.</p>
-            <div class="price-flow">
-                <div class="price-node">
-                    <div class="label">Prior Close</div>
-                    <div class="value">$100.00</div>
-                </div>
-                <div class="price-arrow" style="color: var(--red);">&rarr;</div>
-                <div class="price-node" style="border-color: var(--red);">
-                    <div class="label" style="color: var(--red);">VWAP</div>
-                    <div class="value" style="color: var(--red);">$101.50</div>
-                </div>
-                <div class="price-arrow down">&rarr;</div>
-                <div class="price-node">
-                    <div class="label">Next Open</div>
-                    <div class="value" style="color: var(--red);">$98.00</div>
-                </div>
-            </div>
-            <p style="font-size: 0.85rem;">Timing Diff = -350 bps, but gap was DOWN. Overnight buyers paid above both the close and the open.</p>
-        </div>
-
-        <div class="stat-card" style="max-width: 260px; margin: 20px 0;">
-            <div class="stat-value">68.8%</div>
-            <div class="stat-label">Directional Consistency Rate</div>
-        </div>
-        <p>Across our 79-day sample, 68.8% of overnight observations show directional consistency, meaning the VWAP landed between the prior close and next open nearly 7 out of 10 times.</p>
-    </div>
-
-    <!-- 10. Captured Alpha -->
-    <div class="section">
-        <span class="section-anchor" id="captured-alpha"></span>
-        <h2>10. Captured Alpha</h2>
-        <p><strong>Captured Alpha</strong> in the dashboard is currently equivalent to the Timing Differential. It measures the basis point difference between the overnight VWAP and the next day open, normalized by prior close.</p>
-
-        <div class="formula-box">
-            <div class="label">Formula (same as Timing Differential)</div>
-            <div class="formula">Captured Alpha = (Next_Open - VWAP) / Prior_Close x 10,000</div>
-            <div class="note">Used in clustering, heatmaps, and cross-metric correlation analysis</div>
-        </div>
-
-        <p>The dashboard provides both a <strong>raw</strong> and <strong>winsorized</strong> version. The winsorized version clips extreme values to the 5th and 95th percentiles, preventing outliers from distorting visualizations and statistical summaries.</p>
-
-        <div class="callout callout-insight">
-            <strong>Why a separate field?</strong> In cluster analysis and heatmap correlations, Captured Alpha serves as the primary execution quality metric. Having it as a distinct field allows the dashboard to toggle between raw Timing Differential (for granular analysis) and Captured Alpha (for statistical patterns) independently.
-        </div>
-    </div>
-
-    <!-- 11. Winsorization -->
-    <div class="section">
-        <span class="section-anchor" id="winsorization"></span>
-        <h2>11. Winsorization</h2>
-        <p><strong>Winsorization</strong> is a statistical technique that clips extreme values to specified percentile bounds. In our dashboard, the "Winsorized" toggle replaces any values below the 5th percentile or above the 95th percentile with those boundary values.</p>
-
-        <div class="formula-box">
-            <div class="label">Logic</div>
-            <div class="formula">
-                If value &lt; P5 &rarr; set to P5<br>
-                If value &gt; P95 &rarr; set to P95<br>
-                Otherwise &rarr; keep original
-            </div>
-            <div class="note">Applied independently to Timing Differential, Reference Gap, and Captured Alpha</div>
-        </div>
-
-        <p>This is important for overnight data because single pricing errors or corporate actions can create extreme outliers. For example, a stock split that is not yet reflected in reference prices could show thousands of basis points. Winsorization prevents these from dominating averages and charts while keeping the raw data available.</p>
-
-        <div class="callout callout-warning">
-            <strong>Data quality note:</strong> Observations with absolute Timing Differential exceeding 1,000 bps are flagged as outliers. These typically result from pricing discrepancies, corporate actions, or ticker changes rather than genuine market moves.
-        </div>
-    </div>
-
-    <!-- 12. Worked Examples -->
-    <div class="section">
-        <span class="section-anchor" id="examples"></span>
-        <h2>12. Worked Examples from Our Data</h2>
-        <p>The following examples use real observations from the 79-day dataset (Sep 2, 2025 to Feb 24, 2026). All prices and calculations are actual data.</p>
-
-        <!-- Example A: AAPL UP consistent -->
-        <div class="example">
-            <span class="tag tag-up">UP Gap</span>
-            <span class="tag tag-consistent">Consistent</span>
-            <h4><span class="ticker">AAPL</span></h4>
-            <div class="date">February 2, 2026 | Notional: $64.0M | 248,974 shares</div>
-
-            <div class="price-flow">
-                <div class="price-node">
-                    <div class="label">Prior Close</div>
-                    <div class="value">$259.24</div>
-                </div>
-                <div class="price-arrow up">&rarr;</div>
-                <div class="price-node" style="border-color: var(--amber);">
-                    <div class="label" style="color: var(--amber);">VWAP</div>
-                    <div class="value" style="color: var(--amber);">$256.97</div>
-                </div>
-                <div class="price-arrow up">&rarr;</div>
-                <div class="price-node">
-                    <div class="label">Next Open</div>
-                    <div class="value" style="color: var(--green);">$259.79</div>
-                </div>
-            </div>
-
-            <ul class="calc-steps">
-                <li><span class="highlight-amber">Reference Gap</span> = ($256.97 - $259.24) / $259.24 x 10,000 = <span class="highlight-red">-87.4 bps</span></li>
-                <li><span class="highlight-amber">Timing Differential</span> = ($259.79 - $256.97) / $259.24 x 10,000 = <span class="highlight-green">+108.6 bps</span></li>
-                <li><span class="highlight-amber">Total Gap</span> = -87.4 + 108.6 = <span class="result">+21.2 bps</span></li>
-                <li><span class="highlight-amber">Gap Direction</span> = $259.79 > $259.24 &rarr; <span class="highlight-green">UP</span></li>
-                <li><span class="highlight-amber">Consistency</span> = UP gap, TD > 0 &rarr; <span class="highlight-green">Consistent</span></li>
-            </ul>
-
-            <div class="callout callout-insight" style="margin-top: 16px;">
-                <strong>Interpretation:</strong> AAPL traded overnight at $256.97, below its prior close of $259.24. But the stock opened higher at $259.79. The VWAP landed between close and open (consistent). Overnight buyers purchased at a discount to both the prior close and the next open.
-            </div>
-        </div>
-
-        <!-- Example B: TSLA DOWN consistent -->
-        <div class="example">
-            <span class="tag tag-down">DOWN Gap</span>
-            <span class="tag tag-consistent">Consistent</span>
-            <h4><span class="ticker">TSLA</span></h4>
-            <div class="date">December 17, 2025 | Notional: $565.0M | 1,149,291 shares</div>
-
-            <div class="price-flow">
-                <div class="price-node">
-                    <div class="label">Prior Close</div>
-                    <div class="value">$489.88</div>
-                </div>
-                <div class="price-arrow down">&rarr;</div>
-                <div class="price-node" style="border-color: var(--amber);">
-                    <div class="label" style="color: var(--amber);">VWAP</div>
-                    <div class="value" style="color: var(--amber);">$491.61</div>
-                </div>
-                <div class="price-arrow down">&rarr;</div>
-                <div class="price-node">
-                    <div class="label">Next Open</div>
-                    <div class="value" style="color: var(--red);">$488.22</div>
-                </div>
-            </div>
-
-            <ul class="calc-steps">
-                <li><span class="highlight-amber">Reference Gap</span> = ($491.61 - $489.88) / $489.88 x 10,000 = <span class="highlight-green">+35.4 bps</span></li>
-                <li><span class="highlight-amber">Timing Differential</span> = ($488.22 - $491.61) / $489.88 x 10,000 = <span class="highlight-red">-69.3 bps</span></li>
-                <li><span class="highlight-amber">Total Gap</span> = 35.4 + (-69.3) = <span class="result">-33.9 bps</span></li>
-                <li><span class="highlight-amber">Gap Direction</span> = $488.22 < $489.88 &rarr; <span class="highlight-red">DOWN</span></li>
-                <li><span class="highlight-amber">Consistency</span> = DOWN gap, TD < 0 &rarr; <span class="highlight-green">Consistent</span></li>
-            </ul>
-
-            <div class="callout callout-insight" style="margin-top: 16px;">
-                <strong>Interpretation:</strong> TSLA gapped down from $489.88 to a $488.22 open. The overnight VWAP of $491.61 was above the prior close, meaning the VWAP was between the open and close when viewed directionally. The negative Timing Differential is actually favorable in a down-gap scenario: if participants sold overnight, they sold at a higher price ($491.61) than the next open ($488.22).
-            </div>
-        </div>
-
-        <!-- Example C: Inconsistent MU -->
-        <div class="example">
-            <span class="tag tag-down">DOWN Gap</span>
-            <span class="tag tag-inconsistent">Inconsistent</span>
-            <h4><span class="ticker">MU</span> (Micron Technology)</h4>
-            <div class="date">February 2, 2026 | Notional: $627.3M | 1,552,756 shares</div>
-
-            <div class="price-flow">
-                <div class="price-node">
-                    <div class="label">Prior Close</div>
-                    <div class="value">$414.88</div>
-                </div>
-                <div class="price-arrow" style="color: var(--red);">&rarr;</div>
-                <div class="price-node" style="border-color: var(--red);">
-                    <div class="label" style="color: var(--red);">VWAP</div>
-                    <div class="value" style="color: var(--red);">$404.02</div>
-                </div>
-                <div class="price-arrow up">&rarr;</div>
-                <div class="price-node">
-                    <div class="label">Next Open</div>
-                    <div class="value">$412.18</div>
-                </div>
-            </div>
-
-            <ul class="calc-steps">
-                <li><span class="highlight-amber">Reference Gap</span> = ($404.02 - $414.88) / $414.88 x 10,000 = <span class="highlight-red">-261.8 bps</span></li>
-                <li><span class="highlight-amber">Timing Differential</span> = ($412.18 - $404.02) / $414.88 x 10,000 = <span class="highlight-green">+196.7 bps</span></li>
-                <li><span class="highlight-amber">Total Gap</span> = -261.8 + 196.7 = <span class="result">-65.1 bps</span></li>
-                <li><span class="highlight-amber">Gap Direction</span> = $412.18 < $414.88 &rarr; <span class="highlight-red">DOWN</span></li>
-                <li><span class="highlight-amber">Consistency</span> = DOWN gap, but TD > 0 &rarr; <span class="highlight-red">Inconsistent</span></li>
-            </ul>
-
-            <div class="callout callout-warning" style="margin-top: 16px;">
-                <strong>Interpretation:</strong> MU gapped down overall ($414.88 to $412.18), but the overnight VWAP of $404.02 was well below both the close and the open. Overnight buyers purchased at the session low, and the stock bounced back toward the close by the open. The VWAP did not fall between close and open; it overshot to the downside. The positive Timing Differential here reflects the bounce, not favorable execution. This is directionally inconsistent.
-            </div>
-        </div>
-
-        <!-- Example D: SPY ETF -->
-        <div class="example">
-            <span class="tag tag-etf">ETF</span>
-            <span class="tag tag-up">UP Gap</span>
-            <span class="tag tag-consistent">Consistent</span>
-            <h4><span class="ticker">SPY</span> (S&P 500 ETF)</h4>
-            <div class="date">February 6, 2026 | Notional: $109.5M | 161,910 shares</div>
-
-            <div class="price-flow">
-                <div class="price-node">
-                    <div class="label">Prior Close</div>
-                    <div class="value">$677.62</div>
-                </div>
-                <div class="price-arrow up">&rarr;</div>
-                <div class="price-node" style="border-color: var(--amber);">
-                    <div class="label" style="color: var(--amber);">VWAP</div>
-                    <div class="value" style="color: var(--amber);">$676.15</div>
-                </div>
-                <div class="price-arrow up">&rarr;</div>
-                <div class="price-node">
-                    <div class="label">Next Open</div>
-                    <div class="value" style="color: var(--green);">$681.46</div>
-                </div>
-            </div>
-
-            <ul class="calc-steps">
-                <li><span class="highlight-amber">Reference Gap</span> = ($676.15 - $677.62) / $677.62 x 10,000 = <span class="highlight-red">-21.7 bps</span></li>
-                <li><span class="highlight-amber">Timing Differential</span> = ($681.46 - $676.15) / $677.62 x 10,000 = <span class="highlight-green">+78.3 bps</span></li>
-                <li><span class="highlight-amber">Total Gap</span> = -21.7 + 78.3 = <span class="result">+56.7 bps</span></li>
-                <li><span class="highlight-amber">Gap Direction</span> = $681.46 > $677.62 &rarr; <span class="highlight-green">UP</span></li>
-                <li><span class="highlight-amber">Consistency</span> = UP gap, TD > 0 &rarr; <span class="highlight-green">Consistent</span></li>
-            </ul>
-
-            <div class="callout callout-info" style="margin-top: 16px;">
-                <strong>ETF note:</strong> SPY is the most liquid ETF in overnight ATS trading. Its tight spreads and high notional make it a benchmark for overnight execution quality. This observation shows the VWAP at a slight discount to the prior close, with the stock opening higher, resulting in +78.3 bps of favorable timing.
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Metric Summary Table -->
-    <div class="section">
-        <h2 style="border-bottom-color: var(--blue);">Quick Reference</h2>
-        <table class="summary-table">
-            <thead>
-                <tr>
-                    <th>Metric</th>
-                    <th>Formula</th>
-                    <th>Measures</th>
-                    <th>Dataset Median</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Timing Differential</td>
-                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">(Open - VWAP) / Close</td>
-                    <td>VWAP to open gap</td>
-                    <td class="val-neg">-20.1 bps</td>
-                </tr>
-                <tr>
-                    <td>Reference Gap</td>
-                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">(VWAP - Close) / Close</td>
-                    <td>Close to VWAP gap</td>
-                    <td class="val-neutral">varies</td>
-                </tr>
-                <tr>
-                    <td>Total Overnight Gap</td>
-                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">(Open - Close) / Close</td>
-                    <td>Full close-to-open</td>
-                    <td class="val-neutral">varies</td>
-                </tr>
-                <tr>
-                    <td>Captured Alpha</td>
-                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">Same as Timing Diff</td>
-                    <td>Execution quality signal</td>
-                    <td class="val-neg">-20.1 bps</td>
-                </tr>
-                <tr>
-                    <td>Gap Direction</td>
-                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">Open vs Close</td>
-                    <td>Overnight direction</td>
-                    <td class="val-neutral">53.5% UP</td>
-                </tr>
-                <tr>
-                    <td>Dir. Consistency</td>
-                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">Direction + TD sign</td>
-                    <td>VWAP between C &amp; O</td>
-                    <td class="val-pos">68.8%</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-</div>
-
-<div class="footer">
-    <p>This analysis constitutes independent research on market microstructure
-    and is not intended as investment advice. Past performance does not guarantee
-    future results. All statistics are observational and based on historical data
-    from 2025-09-02 to 2026-02-24. Sapinover LLC is retained by BlueOcean ATS
-    on a flat monthly fee for research services and does not receive
-    transaction-based compensation. No investment recommendations are made herein.</p>
-    <p style="margin-top: 12px;"><a href="index.html">Sapinover LLC</a> &middot; Market Microstructure Research &middot; 2026</p>
-</div>
-
-<!-- Login Overlay -->
-<div id="loginOverlay" style="
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: #0a0a0a; z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Outfit', sans-serif;
-">
-    <div style="text-align: center; max-width: 400px; padding: 40px;">
-        <div style="font-weight: 700; font-size: 1.1rem; letter-spacing: 0.25em; text-transform: uppercase; color: #8a8a96; margin-bottom: 8px;">SAPINOVER</div>
-        <h2 style="font-family: 'Source Serif 4', serif; font-size: 1.6rem; color: #f0f0f2; margin-bottom: 6px;">
-            Metrics Guide
-        </h2>
-        <p style="color: #8a8a96; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 32px;">
-            Authorized Access Only
-        </p>
-        <form id="loginForm" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 12px;">
-            <input type="password" id="passwordInput" placeholder="Enter password"
-                autocomplete="current-password"
-                style="
-                    padding: 12px 16px; border-radius: 8px;
-                    border: 1px solid #1e1e24; background: #141418;
-                    color: #f0f0f2; font-size: 1rem;
-                    font-family: 'JetBrains Mono', monospace;
-                    outline: none; text-align: center;
-                "
-                onfocus="this.style.borderColor='#f5a623'" onblur="this.style.borderColor='#1e1e24'"
-            >
-            <button type="submit" style="
-                padding: 12px 24px; border-radius: 8px; border: none;
-                background: #f5a623; color: #0a0a0a;
-                font-size: 0.95rem; font-weight: 600;
-                cursor: pointer; transition: opacity 0.2s;
-            " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-                View Guide
-            </button>
-        </form>
-        <p id="loginError" style="color: #ef5350; font-size: 0.85rem; margin-top: 12px; display: none;">
-            Invalid password. Please try again.
-        </p>
-    </div>
-</div>
-
-<script>
-// SHA-256 hash of the password for comparison
-const PASS_HASH = 'a0688e2211817fe9994b8b083fd8adfcba5c5e8acae2d2e5e7a660ed174513ee';
-
-async function sha256(str) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function handleLogin(e) {
-    if (e) e.preventDefault();
-    const pw = document.getElementById('passwordInput').value;
-    if (!pw) return;
-    const hash = await sha256(pw);
-    if (hash === PASS_HASH) {
-        sessionStorage.setItem('sp_auth_guide', hash);
-        document.getElementById('loginOverlay').style.display = 'none';
-    } else {
-        document.getElementById('loginError').style.display = 'block';
-        document.getElementById('passwordInput').value = '';
-        document.getElementById('passwordInput').focus();
+    async function deriveKey(password, salt) {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt: salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['decrypt']
+        );
     }
-}
 
-// Check session on load
-(async () => {
-    const saved = sessionStorage.getItem('sp_auth_guide');
-    if (saved && saved === PASS_HASH) {
-        document.getElementById('loginOverlay').style.display = 'none';
-    } else {
-        document.getElementById('passwordInput').focus();
+    async function decryptGuide(password) {
+        const response = await fetch('metrics-guide.enc');
+        if (!response.ok) throw new Error('Could not load encrypted guide');
+        const b64 = await response.text();
+
+        // Decode base64
+        const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+        // Extract salt(16) + iv(12) + ciphertext+tag
+        const salt = raw.slice(0, 16);
+        const iv = raw.slice(16, 28);
+        const ciphertext = raw.slice(28);
+
+        // Derive key and decrypt
+        const key = await deriveKey(password, salt);
+        const decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            ciphertext
+        );
+
+        return new TextDecoder().decode(decrypted);
     }
-})();
-</script>
+
+    async function handleLogin(e) {
+        if (e) e.preventDefault();
+        const password = document.getElementById('passwordInput').value;
+        if (!password) return;
+
+        const errorEl = document.getElementById('loginError');
+        const statusEl = document.getElementById('loginStatus');
+        const btnEl = document.getElementById('loginBtn');
+
+        errorEl.style.display = 'none';
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Decrypting...';
+        btnEl.disabled = true;
+        btnEl.textContent = 'Decrypting...';
+
+        try {
+            const html = await decryptGuide(password);
+
+            // Save to session (same key as index.html for seamless navigation)
+            sessionStorage.setItem('sp_auth', password);
+
+            // Inject decrypted content
+            document.getElementById('guideContent').innerHTML = html;
+
+            // Hide overlay
+            document.getElementById('loginOverlay').style.display = 'none';
+        } catch (err) {
+            errorEl.style.display = 'block';
+            statusEl.style.display = 'none';
+            btnEl.disabled = false;
+            btnEl.textContent = 'View Guide';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+
+    // Check session on page load (auto-login if already authenticated on dashboard)
+    document.addEventListener('DOMContentLoaded', async () => {
+        const saved = sessionStorage.getItem('sp_auth');
+        if (saved) {
+            try {
+                const html = await decryptGuide(saved);
+                document.getElementById('guideContent').innerHTML = html;
+                document.getElementById('loginOverlay').style.display = 'none';
+            } catch {
+                // Password changed or corrupted; clear and show login
+                sessionStorage.removeItem('sp_auth');
+                document.getElementById('passwordInput').focus();
+            }
+        } else {
+            document.getElementById('passwordInput').focus();
+        }
+    });
+    </script>
 </body>
 </html>
