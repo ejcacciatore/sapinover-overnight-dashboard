@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sapinover LLC | Overnight Session Overview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --card: #141418;
+            --card-border: #1e1e24;
+            --text: #f0f0f2;
+            --text-muted: #8a8a96;
+            --amber: #f5a623;
+            --amber-dim: rgba(245, 166, 35, 0.15);
+            --green: #4caf50;
+            --green-dim: rgba(76, 175, 80, 0.12);
+            --red: #ef5350;
+            --red-dim: rgba(239, 83, 80, 0.12);
+            --blue: #42a5f5;
+            --blue-dim: rgba(66, 165, 245, 0.12);
+            --purple: #ab47bc;
+            --purple-dim: rgba(171, 71, 188, 0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(180deg, #111115 0%, var(--bg) 100%);
+            border-bottom: 1px solid var(--card-border);
+            padding: 32px 24px 24px;
+            text-align: center;
+        }
+        .header h1 {
+            font-family: 'Source Serif 4', serif;
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+        }
+        .header h1 span { color: var(--amber); }
+        .header .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .header .date-bar {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        .header select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+            background: var(--card);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .header .date-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+
+        /* KPI Hero */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        .kpi-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 20px 16px;
+            text-align: center;
+        }
+        .kpi-card .kpi-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--amber);
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        .kpi-value.up { color: var(--green); }
+        .kpi-value.down { color: var(--red); }
+
+        /* Section */
+        .section {
+            margin-bottom: 48px;
+        }
+        .section-title {
+            font-family: 'Source Serif 4', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--amber);
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .card h3 {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        /* Venue table */
+        .venue-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .venue-table th {
+            text-align: left;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .venue-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .venue-table td.mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+        }
+        .venue-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .venue-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .dot-boats { background: var(--amber); }
+        .dot-bruce { background: var(--blue); }
+        .dot-moon { background: var(--purple); }
+
+        .val-pos { color: var(--green); }
+        .val-neg { color: var(--red); }
+
+        /* Chart containers */
+        .chart-box { width: 100%; min-height: 280px; }
+        .chart-sm { min-height: 200px; }
+
+        /* Disclaimer */
+        .disclaimer {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 20px 24px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-top: 40px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 32px 24px;
+            border-top: 1px solid var(--card-border);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .footer a { color: var(--amber); text-decoration: none; }
+        .footer a:hover { opacity: 0.8; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        /* Loading */
+        #dashboardContent { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Dashboard content (hidden until decryption) -->
+    <div id="dashboardContent">
+        <div class="header">
+            <h1>Overnight <span>Session Overview</span></h1>
+            <div class="subtitle">Same-Day Market Microstructure Across ATS Venues</div>
+            <div class="date-bar">
+                <span class="date-label">Session Date:</span>
+                <select id="dateSelector" onchange="window.renderDate(this.value)"></select>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- KPI Hero -->
+            <div class="kpi-grid" id="kpiGrid"></div>
+
+            <!-- Section 1: Venue Volume -->
+            <div class="section">
+                <div class="section-title">Venue Volume Comparison</div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Notional by Venue</h3>
+                        <div class="chart-box"><canvas id="chartNotional"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3>Venue Summary</h3>
+                        <table class="venue-table" id="venueSummaryTable"></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Top Tickers -->
+            <div class="section">
+                <div class="section-title">Top Tickers by Notional</div>
+                <div class="grid-3" id="topTickersGrid"></div>
+            </div>
+
+            <!-- Section 3: Sector Distribution -->
+            <div class="section">
+                <div class="section-title">Sector Distribution</div>
+                <div class="card">
+                    <div id="chartSectors" class="chart-box"></div>
+                </div>
+            </div>
+
+            <!-- Section 4: Overnight Direction -->
+            <div class="section">
+                <div class="section-title">Overnight Direction (VWAP vs Prior Close)</div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Indication Distribution (bps)</h3>
+                        <div id="chartDirection" class="chart-box"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Direction Summary</h3>
+                        <table class="venue-table" id="directionTable"></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 5: Spread & Liquidity -->
+            <div class="section">
+                <div class="section-title">Spread &amp; Liquidity</div>
+                <div class="card">
+                    <table class="venue-table" id="spreadTable"></table>
+                </div>
+            </div>
+
+            <!-- Section 6: Cross-Venue Overlap -->
+            <div class="section">
+                <div class="section-title">Cross-Venue Symbol Overlap</div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Overlap Distribution</h3>
+                        <div class="chart-box chart-sm"><canvas id="chartOverlap"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3>Overlap Stats</h3>
+                        <div id="overlapStats"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 7: Historical Trend -->
+            <div class="section" id="historicalSection" style="display:none;">
+                <div class="section-title">Historical Trend</div>
+                <div class="card">
+                    <div id="chartHistorical" class="chart-box"></div>
+                </div>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="disclaimer" id="disclaimer"></div>
+        </div>
+
+        <div class="footer">
+            <span>Sapinover LLC</span> &middot; Market Microstructure Research &middot; <span id="footerYear">2026</span>
+            <br>
+            <a href="index.html">Main Dashboard</a> &middot; <a href="metrics-guide.html">Metrics Guide</a>
+        </div>
+    </div>
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay" style="
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #0a0a0a; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Outfit', sans-serif;
+    ">
+        <div style="text-align: center; max-width: 400px; padding: 40px;">
+            <div style="font-weight: 700; font-size: 1.1rem; letter-spacing: 0.25em; text-transform: uppercase; color: #8a8a96; margin-bottom: 8px;">SAPINOVER</div>
+            <h2 style="font-family: 'Source Serif 4', serif; font-size: 1.6rem; color: #f0f0f2; margin-bottom: 6px;">
+                Session Overview
+            </h2>
+            <p style="color: #8a8a96; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 32px;">
+                Authorized Access Only
+            </p>
+            <form id="loginForm" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="password" id="passwordInput" placeholder="Enter password"
+                    autocomplete="current-password"
+                    style="
+                        padding: 12px 16px; border-radius: 8px;
+                        border: 1px solid #1e1e24; background: #141418;
+                        color: #f0f0f2; font-size: 1rem;
+                        font-family: 'JetBrains Mono', monospace;
+                        outline: none; text-align: center;
+                    "
+                    onfocus="this.style.borderColor='#f5a623'" onblur="this.style.borderColor='#1e1e24'"
+                >
+                <button type="submit" id="loginBtn" style="
+                    padding: 12px 24px; border-radius: 8px; border: none;
+                    background: #f5a623; color: #0a0a0a;
+                    font-size: 0.95rem; font-weight: 600;
+                    cursor: pointer; transition: opacity 0.2s;
+                " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                    View Overview
+                </button>
+            </form>
+            <p id="loginError" style="color: #ef5350; font-size: 0.85rem; margin-top: 12px; display: none;">
+                Invalid password. Please try again.
+            </p>
+            <p id="loginStatus" style="color: #8a8a96; font-size: 0.82rem; margin-top: 12px; display: none;">
+                Decrypting...
+            </p>
+        </div>
+    </div>
+
+    <!-- Decryption + Auth -->
+    <script>
+    const PBKDF2_ITERATIONS = 100000;
+
+    async function deriveKey(password, salt) {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['decrypt']
+        );
+    }
+
+    async function decryptData(password) {
+        const response = await fetch('venue-overview.enc');
+        if (!response.ok) throw new Error('Could not load encrypted data');
+        const b64 = await response.text();
+        const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const salt = raw.slice(0, 16);
+        const iv = raw.slice(16, 28);
+        const ciphertext = raw.slice(28);
+        const key = await deriveKey(password, salt);
+        const decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv }, key, ciphertext
+        );
+        return JSON.parse(new TextDecoder().decode(decrypted));
+    }
+
+    async function handleLogin(e) {
+        if (e) e.preventDefault();
+        const password = document.getElementById('passwordInput').value;
+        if (!password) return;
+        const errorEl = document.getElementById('loginError');
+        const statusEl = document.getElementById('loginStatus');
+        const btnEl = document.getElementById('loginBtn');
+        errorEl.style.display = 'none';
+        statusEl.style.display = 'block';
+        btnEl.disabled = true;
+        btnEl.textContent = 'Decrypting...';
+        try {
+            const json = await decryptData(password);
+            sessionStorage.setItem('sp_auth', password);
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+            window.initVenueOverview(json);
+        } catch (err) {
+            errorEl.style.display = 'block';
+            statusEl.style.display = 'none';
+            btnEl.disabled = false;
+            btnEl.textContent = 'View Overview';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const saved = sessionStorage.getItem('sp_auth');
+        if (saved) {
+            try {
+                const json = await decryptData(saved);
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+                window.initVenueOverview(json);
+            } catch {
+                sessionStorage.removeItem('sp_auth');
+                document.getElementById('passwordInput').focus();
+            }
+        } else {
+            document.getElementById('passwordInput').focus();
+        }
+    });
+    </script>
+
+    <!-- Dashboard Rendering -->
+    <script src="venue-overview.js"></script>
+</body>
+</html>
