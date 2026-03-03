@@ -82,6 +82,7 @@ window.renderDate = function(dateStr) {
     renderKPIs(dd);
     renderVenueVolume(dd);
     renderTopTickers(dd);
+    renderWatchlist(dd);
     renderSectors(dd);
     renderDirection(dd);
     renderSpreadLiquidity(dd);
@@ -331,6 +332,136 @@ function renderTopTickers(dd) {
         grid.appendChild(card);
     });
 }
+
+// ============================================================================
+// SECTION 2B: COMBINED WATCHLIST
+// ============================================================================
+
+let watchlistState = { data: [], sortCol: 1, sortAsc: false, search: '', venueFilter: 'all', sectorFilter: 'all' };
+
+function renderWatchlist(dd) {
+    const raw = dd.watchlist;
+    if (!raw || raw.length === 0) return;
+
+    // Format: [symIdx, notional, volume, trades, vwap, indBps, relNotional, sectorIdx, venueFlags]
+    watchlistState.data = raw;
+    watchlistState.sortCol = 1; // default: notional desc
+    watchlistState.sortAsc = false;
+
+    // Populate sector filter dropdown
+    const sectorSelect = document.getElementById('watchlistSectorFilter');
+    if (sectorSelect) {
+        const sectorSet = new Set();
+        raw.forEach(r => { if (r[7] >= 0) sectorSet.add(r[7]); });
+        const opts = '<option value="all">All Sectors</option>' +
+            Array.from(sectorSet).sort((a,b) => sectorName(a).localeCompare(sectorName(b)))
+                .map(i => `<option value="${i}">${sectorName(i)}</option>`).join('');
+        sectorSelect.innerHTML = opts;
+    }
+
+    // Wire up filters
+    const searchEl = document.getElementById('watchlistSearch');
+    const venueEl = document.getElementById('watchlistVenueFilter');
+    const sectorEl = document.getElementById('watchlistSectorFilter');
+    if (searchEl) searchEl.oninput = () => { watchlistState.search = searchEl.value.toUpperCase(); renderWatchlistTable(); };
+    if (venueEl) venueEl.onchange = () => { watchlistState.venueFilter = venueEl.value; renderWatchlistTable(); };
+    if (sectorEl) sectorEl.onchange = () => { watchlistState.sectorFilter = sectorEl.value; renderWatchlistTable(); };
+
+    renderWatchlistTable();
+}
+
+function renderWatchlistTable() {
+    const { data, sortCol, sortAsc, search, venueFilter, sectorFilter } = watchlistState;
+
+    // Filter
+    let rows = data.filter(r => {
+        if (search && !sym(r[0]).toUpperCase().includes(search)) return false;
+        if (venueFilter !== 'all') {
+            const mask = parseInt(venueFilter);
+            if (mask === 7) { if (r[8] !== 7) return false; }
+            else { if (!(r[8] & mask)) return false; }
+        }
+        if (sectorFilter !== 'all' && r[7] !== parseInt(sectorFilter)) return false;
+        return true;
+    });
+
+    // Sort
+    const sorted = [...rows].sort((a, b) => {
+        let va = a[sortCol], vb = b[sortCol];
+        if (va == null) va = sortAsc ? Infinity : -Infinity;
+        if (vb == null) vb = sortAsc ? Infinity : -Infinity;
+        return sortAsc ? va - vb : vb - va;
+    });
+
+    // Limit display to top 200
+    const display = sorted.slice(0, 200);
+    const countEl = document.getElementById('watchlistCount');
+    if (countEl) countEl.textContent = `${display.length} of ${rows.length} symbols`;
+
+    // Column definitions
+    const cols = [
+        { key: 0, label: 'Symbol', align: 'left' },
+        { key: 1, label: 'Notional', align: 'right' },
+        { key: 2, label: 'Volume', align: 'right' },
+        { key: 5, label: 'Indication', align: 'right' },
+        { key: 4, label: 'VWAP', align: 'right' },
+        { key: 6, label: 'vs Avg', align: 'right' },
+        { key: 7, label: 'Sector', align: 'left' },
+        { key: 8, label: 'Venues', align: 'center' },
+    ];
+
+    // Build header
+    let html = '<thead><tr>';
+    cols.forEach(c => {
+        const active = sortCol === c.key ? ' active' : '';
+        const arrow = sortCol === c.key ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25BC';
+        const sortable = c.key === 8 ? '' : ` class="sort-header${active}" onclick="sortWatchlist(${c.key})"`;
+        html += `<th style="text-align:${c.align}"${sortable}>${c.label}`;
+        if (c.key !== 8) html += ` <span class="sort-arrow">${arrow}</span>`;
+        html += '</th>';
+    });
+    html += '</tr></thead><tbody>';
+
+    // Build rows
+    display.forEach(r => {
+        const indCls = r[5] != null ? (r[5] >= 0 ? 'val-pos' : 'val-neg') : '';
+        const relCls = r[6] != null ? (r[6] >= 2.0 ? 'val-pos' : r[6] <= 0.5 ? 'val-neg' : '') : '';
+        const flags = r[8];
+        const v1on = flags & 1 ? ' on' : '';
+        const v2on = flags & 2 ? ' on' : '';
+        const v3on = flags & 4 ? ' on' : '';
+
+        html += '<tr>';
+        html += `<td style="text-align:left"><strong>${sym(r[0])}</strong></td>`;
+        html += `<td style="text-align:right">${fmtDollar(r[1])}</td>`;
+        html += `<td style="text-align:right">${fmtNum(r[2])}</td>`;
+        html += `<td style="text-align:right" class="${indCls}">${r[5] != null ? fmtBps(r[5]) : '-'}</td>`;
+        html += `<td style="text-align:right">${r[4] != null ? fmtPrice(r[4]) : '-'}</td>`;
+        html += `<td style="text-align:right" class="${relCls}">${r[6] != null ? r[6].toFixed(1) + 'x' : '-'}</td>`;
+        html += `<td style="text-align:left;font-size:0.75rem;color:var(--text-muted)">${sectorName(r[7])}</td>`;
+        html += `<td><div class="venue-dots">`;
+        html += `<div class="vd${v1on}" style="background:${VENUES.venue1.color}"></div>`;
+        html += `<div class="vd${v2on}" style="background:${VENUES.venue2.color}"></div>`;
+        html += `<div class="vd${v3on}" style="background:${VENUES.venue3.color}"></div>`;
+        html += `</div></td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody>';
+    document.getElementById('watchlistTable').innerHTML = html;
+}
+
+window.sortWatchlist = function(colKey) {
+    if (watchlistState.sortCol === colKey) {
+        watchlistState.sortAsc = !watchlistState.sortAsc;
+    } else {
+        watchlistState.sortCol = colKey;
+        // Default sort direction: desc for numbers, asc for text
+        watchlistState.sortAsc = (colKey === 0 || colKey === 7);
+    }
+    renderWatchlistTable();
+};
+
 
 // ============================================================================
 // SECTION 3: SECTOR DISTRIBUTION

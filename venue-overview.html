@@ -214,6 +214,15 @@
             .kpi-grid { grid-template-columns: repeat(3, 1fr); }
         }
 
+        /* Watchlist sortable headers */
+        .sort-header { cursor: pointer; user-select: none; white-space: nowrap; }
+        .sort-header:hover { color: var(--amber); }
+        .sort-header .sort-arrow { font-size: 0.7rem; margin-left: 2px; opacity: 0.4; }
+        .sort-header.active .sort-arrow { opacity: 1; color: var(--amber); }
+        .venue-dots { display: flex; gap: 4px; justify-content: center; }
+        .venue-dots .vd { width: 8px; height: 8px; border-radius: 50%; opacity: 0.2; }
+        .venue-dots .vd.on { opacity: 1; }
+
         /* Loading */
         #dashboardContent { display: none; }
     </style>
@@ -254,6 +263,37 @@
             <div class="section">
                 <div class="section-title">Top Tickers by Notional</div>
                 <div class="grid-3" id="topTickersGrid"></div>
+            </div>
+
+            <!-- Section 2b: Watchlist (combined cross-venue) -->
+            <div class="section">
+                <div class="section-title">Combined Watchlist</div>
+                <div class="card" style="padding: 16px;">
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="watchlistSearch" placeholder="Search symbol..."
+                            style="background: var(--bg); border: 1px solid var(--card-border); color: var(--text);
+                            padding: 6px 12px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+                            font-size: 0.82rem; width: 160px;">
+                        <select id="watchlistVenueFilter"
+                            style="background: var(--bg); border: 1px solid var(--card-border); color: var(--text-muted);
+                            padding: 6px 10px; border-radius: 6px; font-size: 0.8rem;">
+                            <option value="all">All Venues</option>
+                            <option value="7">All 3 Venues</option>
+                            <option value="1">Venue 1 Only</option>
+                            <option value="2">Venue 2 Only</option>
+                            <option value="4">Venue 3 Only</option>
+                        </select>
+                        <select id="watchlistSectorFilter"
+                            style="background: var(--bg); border: 1px solid var(--card-border); color: var(--text-muted);
+                            padding: 6px 10px; border-radius: 6px; font-size: 0.8rem;">
+                            <option value="all">All Sectors</option>
+                        </select>
+                        <span id="watchlistCount" style="color: var(--text-muted); font-size: 0.8rem; margin-left: auto;"></span>
+                    </div>
+                    <div style="max-height: 600px; overflow-y: auto;">
+                        <table class="venue-table" id="watchlistTable"></table>
+                    </div>
+                </div>
             </div>
 
             <!-- Section 3: Sector Distribution -->
