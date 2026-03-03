@@ -183,9 +183,9 @@
     }
 
     async function decryptData(password) {
-        const response = await fetch('data.enc');
+        const response = await fetch('data.enc?v=2');
         if (!response.ok) throw new Error('Could not load encrypted data');
-        const b64 = await response.text();
+        const b64 = (await response.text()).trim();
 
         // Decode base64
         const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -232,8 +232,15 @@
             document.getElementById('loginOverlay').style.display = 'none';
 
             // Initialize dashboard with decrypted data
-            window.initDashboard(json);
+            try {
+                window.initDashboard(json);
+            } catch (renderErr) {
+                console.error('Rendering error:', renderErr);
+                document.body.innerHTML +=
+                    '<p style="color:#ef5350;padding:40px;text-align:center;">Dashboard rendering error. Check console for details.</p>';
+            }
         } catch (err) {
+            console.error('Decryption error:', err);
             errorEl.style.display = 'block';
             statusEl.style.display = 'none';
             btnEl.disabled = false;
@@ -250,7 +257,13 @@
             try {
                 const json = await decryptData(saved);
                 document.getElementById('loginOverlay').style.display = 'none';
-                window.initDashboard(json);
+                try {
+                    window.initDashboard(json);
+                } catch (renderErr) {
+                    console.error('Rendering error:', renderErr);
+                    document.body.innerHTML +=
+                        '<p style="color:#ef5350;padding:40px;text-align:center;">Dashboard rendering error. Check console for details.</p>';
+                }
             } catch {
                 sessionStorage.removeItem('sp_auth');
             }

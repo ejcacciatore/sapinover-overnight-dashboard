@@ -385,9 +385,9 @@
     }
 
     async function decryptData(password) {
-        const response = await fetch('venue-overview.enc');
+        const response = await fetch('venue-overview.enc?v=2');
         if (!response.ok) throw new Error('Could not load encrypted data');
-        const b64 = await response.text();
+        const b64 = (await response.text()).trim();
         const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
         const salt = raw.slice(0, 16);
         const iv = raw.slice(16, 28);
@@ -415,8 +415,15 @@
             sessionStorage.setItem('sp_auth', password);
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('dashboardContent').style.display = 'block';
-            window.initVenueOverview(json);
+            try {
+                window.initVenueOverview(json);
+            } catch (renderErr) {
+                console.error('Rendering error:', renderErr);
+                document.getElementById('dashboardContent').innerHTML =
+                    '<p style="color:#ef5350;padding:40px;text-align:center;">Dashboard rendering error. Check console for details.</p>';
+            }
         } catch (err) {
+            console.error('Decryption error:', err);
             errorEl.style.display = 'block';
             statusEl.style.display = 'none';
             btnEl.disabled = false;
@@ -433,7 +440,13 @@
                 const json = await decryptData(saved);
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('dashboardContent').style.display = 'block';
-                window.initVenueOverview(json);
+                try {
+                    window.initVenueOverview(json);
+                } catch (renderErr) {
+                    console.error('Rendering error:', renderErr);
+                    document.getElementById('dashboardContent').innerHTML =
+                        '<p style="color:#ef5350;padding:40px;text-align:center;">Dashboard rendering error. Check console for details.</p>';
+                }
             } catch {
                 sessionStorage.removeItem('sp_auth');
                 document.getElementById('passwordInput').focus();
@@ -445,6 +458,6 @@
     </script>
 
     <!-- Dashboard Rendering -->
-    <script src="venue-overview.js"></script>
+    <script src="venue-overview.js?v=1.1"></script>
 </body>
 </html>
