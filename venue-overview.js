@@ -175,12 +175,25 @@ function renderKPIs(dd) {
     const uniqueSymbols = dd.overlap && dd.overlap.counts ? dd.overlap.counts.total : 0;
     const netIndication = totalWeight > 0 ? weightedBps / totalWeight : null;
 
+    // Check for historical average (BOATS venue carries the parquet-based avg)
+    const boatsAvg = s.boats && s.boats.notionalVsAvg ? s.boats.notionalVsAvg : null;
+    const vsAvgLabel = boatsAvg != null
+        ? `${boatsAvg.toFixed(2)}x`
+        : '-';
+    const vsAvgCls = boatsAvg != null
+        ? (boatsAvg >= 1.2 ? 'up' : boatsAvg <= 0.8 ? 'down' : '')
+        : '';
+
     const kpis = [
         { value: fmtDollar(totalNotional), label: 'Total Notional', cls: '' },
         { value: fmtNum(totalVolume), label: 'Total Share Volume', cls: '' },
         { value: fmtNum(totalTrades), label: 'Total Trades', cls: '' },
         { value: fmtNum(uniqueSymbols), label: 'Unique Symbols', cls: '' },
-        { value: activeVenues + ' / 3', label: 'Active Venues', cls: '' },
+        {
+            value: vsAvgLabel,
+            label: 'BOATS vs 20d Avg',
+            cls: vsAvgCls
+        },
         {
             value: netIndication != null ? fmtBps(netIndication) : '-',
             label: 'Net Overnight Indication',
@@ -255,7 +268,7 @@ function renderVenueVolume(dd) {
     const table = document.getElementById('venueSummaryTable');
     let html = `<thead><tr>
         <th>Venue</th><th>Notional</th><th>Volume</th>
-        <th>Trades</th><th>Symbols</th><th>% of Total</th>
+        <th>Trades</th><th>Symbols</th><th>% of Total</th><th>vs 20d Avg</th>
     </tr></thead><tbody>`;
 
     const totalNotional = VENUE_KEYS.reduce((sum, v) => sum + (s[v] ? s[v].notional || 0 : 0), 0);
@@ -263,6 +276,9 @@ function renderVenueVolume(dd) {
     VENUE_KEYS.forEach(v => {
         if (!s[v] || s[v].notional === 0) return;
         const pct = totalNotional > 0 ? (s[v].notional / totalNotional * 100) : 0;
+        const vsAvg = s[v].notionalVsAvg;
+        const vsAvgStr = vsAvg != null ? vsAvg.toFixed(2) + 'x' : '-';
+        const vsAvgCls = vsAvg != null ? (vsAvg >= 1.2 ? 'val-pos' : vsAvg <= 0.8 ? 'val-neg' : '') : '';
         html += `<tr>
             <td><span class="venue-dot ${VENUES[v].dotClass}"></span>${VENUES[v].label}</td>
             <td class="mono">${fmtDollar(s[v].notional)}</td>
@@ -270,6 +286,7 @@ function renderVenueVolume(dd) {
             <td class="mono">${fmtNum(s[v].trades)}</td>
             <td class="mono">${fmtNum(s[v].symbols)}</td>
             <td class="mono">${fmtPct(pct)}</td>
+            <td class="mono ${vsAvgCls}">${vsAvgStr}</td>
         </tr>`;
     });
     html += '</tbody>';
@@ -291,18 +308,21 @@ function renderTopTickers(dd) {
 
         let html = `<h3><span class="venue-dot ${VENUES[v].dotClass}"></span>${VENUES[v].label} Top 15</h3>`;
         html += `<table class="venue-table"><thead><tr>
-            <th>#</th><th>Symbol</th><th>Notional</th><th>VWAP</th><th>Indication</th>
+            <th>#</th><th>Symbol</th><th>Notional</th><th>VWAP</th><th>Indication</th><th>vs Avg</th>
         </tr></thead><tbody>`;
 
         tickers.forEach((row, i) => {
-            // [symIdx, notional, volume, trades, vwap, indicationBps]
-            const [symIdx, notional, volume, trades, vwap, indBps] = row;
+            // [symIdx, notional, volume, trades, vwap, indicationBps, relNotional, relVolume]
+            const [symIdx, notional, volume, trades, vwap, indBps, relNot, relVol] = row;
+            const relStr = relNot != null ? relNot.toFixed(1) + 'x' : '-';
+            const relCls = relNot != null ? (relNot >= 2.0 ? 'val-pos' : relNot <= 0.5 ? 'val-neg' : '') : '';
             html += `<tr>
                 <td class="mono" style="color:var(--text-muted)">${i + 1}</td>
                 <td style="font-weight:500">${sym(symIdx)}</td>
                 <td class="mono">${fmtDollar(notional)}</td>
                 <td class="mono">${fmtPrice(vwap)}</td>
                 <td class="mono ${bpsClass(indBps)}">${fmtBps(indBps)}</td>
+                <td class="mono ${relCls}">${relStr}</td>
             </tr>`;
         });
 
