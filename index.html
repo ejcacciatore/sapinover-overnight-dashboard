@@ -183,7 +183,7 @@
     }
 
     async function decryptData(password) {
-        const response = await fetch('data.enc?v=2');
+        const response = await fetch('data.enc?t=' + Date.now());
         if (!response.ok) throw new Error('Could not load encrypted data');
         const b64 = (await response.text()).trim();
 

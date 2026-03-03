@@ -385,7 +385,7 @@
     }
 
     async function decryptData(password) {
-        const response = await fetch('venue-overview.enc?v=2');
+        const response = await fetch('venue-overview.enc?t=' + Date.now());
         if (!response.ok) throw new Error('Could not load encrypted data');
         const b64 = (await response.text()).trim();
         const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
