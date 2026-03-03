@@ -14,13 +14,13 @@ let CURRENT_DATE = null;
 let chartInstances = {};
 let plotlyCharts = [];
 
-// Venue config
+// Venue config (anonymized per FINRA 2241 / venue anonymity requirements)
 const VENUES = {
-    boats: { label: 'BlueOcean', color: '#f5a623', colorDim: 'rgba(245,166,35,0.15)', dotClass: 'dot-boats' },
-    bruce: { label: 'Bruce', color: '#42a5f5', colorDim: 'rgba(66,165,245,0.15)', dotClass: 'dot-bruce' },
-    moon:  { label: 'Moon', color: '#ab47bc', colorDim: 'rgba(171,71,188,0.15)', dotClass: 'dot-moon' }
+    venue1: { label: 'Venue 1', color: '#f5a623', colorDim: 'rgba(245,166,35,0.15)', dotClass: 'dot-v1' },
+    venue2: { label: 'Venue 2', color: '#42a5f5', colorDim: 'rgba(66,165,245,0.15)', dotClass: 'dot-v2' },
+    venue3: { label: 'Venue 3', color: '#ab47bc', colorDim: 'rgba(171,71,188,0.15)', dotClass: 'dot-v3' }
 };
-const VENUE_KEYS = ['boats', 'bruce', 'moon'];
+const VENUE_KEYS = ['venue1', 'venue2', 'venue3'];
 
 // Plotly layout defaults (dark theme)
 const PLOTLY_LAYOUT = {
@@ -175,13 +175,13 @@ function renderKPIs(dd) {
     const uniqueSymbols = dd.overlap && dd.overlap.counts ? dd.overlap.counts.total : 0;
     const netIndication = totalWeight > 0 ? weightedBps / totalWeight : null;
 
-    // Check for historical average (BOATS venue carries the parquet-based avg)
-    const boatsAvg = s.boats && s.boats.notionalVsAvg ? s.boats.notionalVsAvg : null;
-    const vsAvgLabel = boatsAvg != null
-        ? `${boatsAvg.toFixed(2)}x`
+    // Check for historical average (Venue 1 carries the parquet-based avg)
+    const v1Avg = s.venue1 && s.venue1.notionalVsAvg ? s.venue1.notionalVsAvg : null;
+    const vsAvgLabel = v1Avg != null
+        ? `${v1Avg.toFixed(2)}x`
         : '-';
-    const vsAvgCls = boatsAvg != null
-        ? (boatsAvg >= 1.2 ? 'up' : boatsAvg <= 0.8 ? 'down' : '')
+    const vsAvgCls = v1Avg != null
+        ? (v1Avg >= 1.2 ? 'up' : v1Avg <= 0.8 ? 'down' : '')
         : '';
 
     const kpis = [
@@ -191,7 +191,7 @@ function renderKPIs(dd) {
         { value: fmtNum(uniqueSymbols), label: 'Unique Symbols', cls: '' },
         {
             value: vsAvgLabel,
-            label: 'BOATS vs 20d Avg',
+            label: 'Venue 1 vs 20d Avg',
             cls: vsAvgCls
         },
         {
@@ -566,13 +566,13 @@ function renderOverlap(dd) {
     const statsEl = document.getElementById('overlapStats');
     const total = counts.total || 0;
 
-    // Build pairwise breakdown
-    const boatsBruce = ovl.boatsBruce ? ovl.boatsBruce.length : 0;
-    const boatsMoon = ovl.boatsMoon ? ovl.boatsMoon.length : 0;
-    const bruceMoon = ovl.bruceMoon ? ovl.bruceMoon.length : 0;
-    const boatsOnly = ovl.boatsOnly ? ovl.boatsOnly.length : 0;
-    const bruceOnly = ovl.bruceOnly ? ovl.bruceOnly.length : 0;
-    const moonOnly = ovl.moonOnly ? ovl.moonOnly.length : 0;
+    // Build pairwise breakdown (anonymized keys)
+    const v1v2 = ovl.v1v2 ? ovl.v1v2.length : 0;
+    const v1v3 = ovl.v1v3 ? ovl.v1v3.length : 0;
+    const v2v3 = ovl.v2v3 ? ovl.v2v3.length : 0;
+    const v1Only = ovl.v1Only ? ovl.v1Only.length : 0;
+    const v2Only = ovl.v2Only ? ovl.v2Only.length : 0;
+    const v3Only = ovl.v3Only ? ovl.v3Only.length : 0;
 
     let statsHtml = `<table class="venue-table">
         <thead><tr><th>Category</th><th>Symbols</th><th>% of Total</th></tr></thead>
@@ -583,34 +583,34 @@ function renderOverlap(dd) {
                 <td class="mono">${total > 0 ? fmtPct(all3 / total * 100) : '-'}</td>
             </tr>
             <tr>
-                <td>BlueOcean + Bruce only</td>
-                <td class="mono">${fmtNum(boatsBruce)}</td>
-                <td class="mono">${total > 0 ? fmtPct(boatsBruce / total * 100) : '-'}</td>
+                <td>Venue 1 + Venue 2 only</td>
+                <td class="mono">${fmtNum(v1v2)}</td>
+                <td class="mono">${total > 0 ? fmtPct(v1v2 / total * 100) : '-'}</td>
             </tr>
             <tr>
-                <td>BlueOcean + Moon only</td>
-                <td class="mono">${fmtNum(boatsMoon)}</td>
-                <td class="mono">${total > 0 ? fmtPct(boatsMoon / total * 100) : '-'}</td>
+                <td>Venue 1 + Venue 3 only</td>
+                <td class="mono">${fmtNum(v1v3)}</td>
+                <td class="mono">${total > 0 ? fmtPct(v1v3 / total * 100) : '-'}</td>
             </tr>
             <tr>
-                <td>Bruce + Moon only</td>
-                <td class="mono">${fmtNum(bruceMoon)}</td>
-                <td class="mono">${total > 0 ? fmtPct(bruceMoon / total * 100) : '-'}</td>
+                <td>Venue 2 + Venue 3 only</td>
+                <td class="mono">${fmtNum(v2v3)}</td>
+                <td class="mono">${total > 0 ? fmtPct(v2v3 / total * 100) : '-'}</td>
             </tr>
             <tr style="border-top: 1px solid var(--card-border)">
-                <td>BlueOcean only</td>
-                <td class="mono">${fmtNum(boatsOnly)}</td>
-                <td class="mono">${total > 0 ? fmtPct(boatsOnly / total * 100) : '-'}</td>
+                <td>Venue 1 only</td>
+                <td class="mono">${fmtNum(v1Only)}</td>
+                <td class="mono">${total > 0 ? fmtPct(v1Only / total * 100) : '-'}</td>
             </tr>
             <tr>
-                <td>Bruce only</td>
-                <td class="mono">${fmtNum(bruceOnly)}</td>
-                <td class="mono">${total > 0 ? fmtPct(bruceOnly / total * 100) : '-'}</td>
+                <td>Venue 2 only</td>
+                <td class="mono">${fmtNum(v2Only)}</td>
+                <td class="mono">${total > 0 ? fmtPct(v2Only / total * 100) : '-'}</td>
             </tr>
             <tr>
-                <td>Moon only</td>
-                <td class="mono">${fmtNum(moonOnly)}</td>
-                <td class="mono">${total > 0 ? fmtPct(moonOnly / total * 100) : '-'}</td>
+                <td>Venue 3 only</td>
+                <td class="mono">${fmtNum(v3Only)}</td>
+                <td class="mono">${total > 0 ? fmtPct(v3Only / total * 100) : '-'}</td>
             </tr>
             <tr style="border-top: 2px solid var(--card-border); font-weight:600">
                 <td>Total Unique</td>
@@ -721,7 +721,7 @@ function renderDisclaimer() {
         and is not intended as investment advice. Past performance does not guarantee
         future results. All statistics are observational and based on historical data
         from ${formatDateDisplay(startDate)} to ${formatDateDisplay(endDate)}.
-        Sapinover LLC is retained by BlueOcean ATS on a flat monthly fee for research services
+        Sapinover LLC is retained on a flat monthly fee for research services
         and does not receive transaction-based compensation. No investment recommendations are made herein.
         <br><br>
         <strong>Overnight Indication:</strong> Calculated as (Session VWAP &minus; Prior Close) / Prior Close &times; 10,000
