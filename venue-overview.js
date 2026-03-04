@@ -160,15 +160,15 @@ function renderSessionSummary(dd, dateStr) {
 
     var dateLabel = formatDateDisplay(dateStr);
 
-    // Gather venue stats
-    var venues = dd.venues || {};
+    // Gather venue stats from dd.summary (keyed by venue1/venue2/venue3)
+    var summary = dd.summary || {};
     var venueNames = [];
     var totalNotional = 0;
     var totalSymbols = 0;
     var totalTrades = 0;
     VENUE_KEYS.forEach(function(vk) {
-        var v = venues[vk];
-        if (v) {
+        var v = summary[vk];
+        if (v && v.notional > 0) {
             venueNames.push(VENUES[vk].label);
             totalNotional += (v.notional || 0);
             totalSymbols += (v.symbols || 0);
@@ -177,31 +177,33 @@ function renderSessionSummary(dd, dateStr) {
     });
 
     // Gather watchlist stats for direction
+    // Watchlist format: [symIdx, notional, volume, trades, vwap, indBps, relNotional, sectorIdx, venueFlags]
     var wl = dd.watchlist || [];
     var upCount = 0;
     var downCount = 0;
-    var totalWl = wl.length;
     var indValues = [];
     wl.forEach(function(row) {
-        var ind = row[3]; // indication bps
+        var ind = row[5]; // indication bps is at index 5
         if (ind != null && !isNaN(ind)) {
             indValues.push(ind);
             if (ind > 0) upCount++;
             else if (ind < 0) downCount++;
         }
     });
+    var totalWithInd = indValues.length;
     var medianInd = null;
     if (indValues.length > 0) {
         indValues.sort(function(a, b) { return a - b; });
         var mid = Math.floor(indValues.length / 2);
         medianInd = indValues.length % 2 !== 0 ? indValues[mid] : (indValues[mid - 1] + indValues[mid]) / 2;
     }
-    var pctUp = totalWl > 0 ? (upCount / totalWl * 100) : 0;
+    var pctUp = totalWithInd > 0 ? (upCount / totalWithInd * 100) : 0;
 
     // Gather sector heatmap for top/bottom sectors
+    // Heatmap format per venue: [[sectorIdx, medianInd, meanInd, notional, symCount, pctUp], ...]
     var hm = dd.sectorHeatmap || {};
-    var sectorTotals = {};
     var sectors = (LOOKUP && LOOKUP.sectors) ? LOOKUP.sectors : [];
+    var sectorTotals = {};
     Object.keys(hm).forEach(function(vk) {
         (hm[vk] || []).forEach(function(row) {
             var sIdx = row[0];
@@ -232,15 +234,16 @@ function renderSessionSummary(dd, dateStr) {
     var strongestSector = sorted_by_ind.length > 0 ? sorted_by_ind[0] : null;
     var weakestSector = sorted_by_ind.length > 1 ? sorted_by_ind[sorted_by_ind.length - 1] : null;
 
-    // Top 3 movers from watchlist (by absolute indication)
-    var wlSorted = wl.slice().sort(function(a, b) {
-        return Math.abs(b[3] || 0) - Math.abs(a[3] || 0);
+    // Top 3 movers from watchlist (by absolute indication, index 5)
+    var wlWithInd = wl.filter(function(r) { return r[5] != null && !isNaN(r[5]); });
+    var wlSorted = wlWithInd.slice().sort(function(a, b) {
+        return Math.abs(b[5]) - Math.abs(a[5]);
     });
     var topMovers = wlSorted.slice(0, 3).map(function(row) {
         var symIdx = row[0];
-        var sym = (LOOKUP && LOOKUP.symbols) ? (LOOKUP.symbols[symIdx] || '???') : '???';
-        var ind = row[3];
-        return sym + ' (' + (ind > 0 ? '+' : '') + ind.toFixed(0) + ' bps)';
+        var symName = (LOOKUP && LOOKUP.symbols) ? (LOOKUP.symbols[symIdx] || '???') : '???';
+        var ind = row[5];
+        return symName + ' (' + (ind > 0 ? '+' : '') + ind.toFixed(0) + ' bps)';
     });
 
     // Build the summary paragraphs
