@@ -260,7 +260,7 @@ function renderSessionSummary(dd, dateStr) {
     html += '</p>';
 
     // Direction paragraph
-    if (totalWl > 0 && medianInd != null) {
+    if (totalWithInd > 0 && medianInd != null) {
         var dirWord = pctUp >= 55 ? 'positive' : (pctUp <= 45 ? 'negative' : 'mixed');
         html += '<p style="margin-bottom: 10px;">';
         html += 'Overnight direction was predominantly <strong style="color: ' + (pctUp >= 50 ? '#4caf50' : '#ef5350') + ';">' + dirWord + '</strong>: ';
