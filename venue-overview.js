@@ -79,6 +79,7 @@ window.renderDate = function(dateStr) {
     plotlyCharts.forEach(id => { try { Plotly.purge(id); } catch(e) {} });
     plotlyCharts = [];
 
+    renderSessionSummary(dd, dateStr);
     renderKPIs(dd);
     renderVenueVolume(dd);
     renderTopTickers(dd);
@@ -147,6 +148,151 @@ function sectorName(idx) {
 
 function companyName(idx) {
     return (LOOKUP.companies && LOOKUP.companies[idx]) || '';
+}
+
+// ============================================================================
+// SECTION: SESSION SUMMARY (natural-language overview)
+// ============================================================================
+
+function renderSessionSummary(dd, dateStr) {
+    var el = document.getElementById('sessionSummary');
+    if (!el) return;
+
+    var dateLabel = formatDateDisplay(dateStr);
+
+    // Gather venue stats
+    var venues = dd.venues || {};
+    var venueNames = [];
+    var totalNotional = 0;
+    var totalSymbols = 0;
+    var totalTrades = 0;
+    VENUE_KEYS.forEach(function(vk) {
+        var v = venues[vk];
+        if (v) {
+            venueNames.push(VENUES[vk].label);
+            totalNotional += (v.notional || 0);
+            totalSymbols += (v.symbols || 0);
+            totalTrades += (v.trades || 0);
+        }
+    });
+
+    // Gather watchlist stats for direction
+    var wl = dd.watchlist || [];
+    var upCount = 0;
+    var downCount = 0;
+    var totalWl = wl.length;
+    var indValues = [];
+    wl.forEach(function(row) {
+        var ind = row[3]; // indication bps
+        if (ind != null && !isNaN(ind)) {
+            indValues.push(ind);
+            if (ind > 0) upCount++;
+            else if (ind < 0) downCount++;
+        }
+    });
+    var medianInd = null;
+    if (indValues.length > 0) {
+        indValues.sort(function(a, b) { return a - b; });
+        var mid = Math.floor(indValues.length / 2);
+        medianInd = indValues.length % 2 !== 0 ? indValues[mid] : (indValues[mid - 1] + indValues[mid]) / 2;
+    }
+    var pctUp = totalWl > 0 ? (upCount / totalWl * 100) : 0;
+
+    // Gather sector heatmap for top/bottom sectors
+    var hm = dd.sectorHeatmap || {};
+    var sectorTotals = {};
+    var sectors = (LOOKUP && LOOKUP.sectors) ? LOOKUP.sectors : [];
+    Object.keys(hm).forEach(function(vk) {
+        (hm[vk] || []).forEach(function(row) {
+            var sIdx = row[0];
+            var medInd = row[1];
+            var notional = row[3];
+            var sName = sectors[sIdx] || ('Sector ' + sIdx);
+            if (!sectorTotals[sName]) sectorTotals[sName] = { notional: 0, indSum: 0, count: 0 };
+            sectorTotals[sName].notional += (notional || 0);
+            if (medInd != null) {
+                sectorTotals[sName].indSum += medInd;
+                sectorTotals[sName].count += 1;
+            }
+        });
+    });
+
+    // Sort sectors by notional
+    var sectorList = Object.keys(sectorTotals).map(function(s) {
+        var d = sectorTotals[s];
+        return { name: s, notional: d.notional, avgInd: d.count > 0 ? d.indSum / d.count : null };
+    }).sort(function(a, b) { return b.notional - a.notional; });
+
+    // Top 3 sectors by notional
+    var topSectors = sectorList.slice(0, 3).map(function(s) { return s.name; });
+
+    // Most positive and most negative sectors
+    var sorted_by_ind = sectorList.filter(function(s) { return s.avgInd != null; })
+        .sort(function(a, b) { return b.avgInd - a.avgInd; });
+    var strongestSector = sorted_by_ind.length > 0 ? sorted_by_ind[0] : null;
+    var weakestSector = sorted_by_ind.length > 1 ? sorted_by_ind[sorted_by_ind.length - 1] : null;
+
+    // Top 3 movers from watchlist (by absolute indication)
+    var wlSorted = wl.slice().sort(function(a, b) {
+        return Math.abs(b[3] || 0) - Math.abs(a[3] || 0);
+    });
+    var topMovers = wlSorted.slice(0, 3).map(function(row) {
+        var symIdx = row[0];
+        var sym = (LOOKUP && LOOKUP.symbols) ? (LOOKUP.symbols[symIdx] || '???') : '???';
+        var ind = row[3];
+        return sym + ' (' + (ind > 0 ? '+' : '') + ind.toFixed(0) + ' bps)';
+    });
+
+    // Build the summary paragraphs
+    var html = '<div style="font-size: 0.82rem; color: #c0c0cc;">';
+    html += '<div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: #f5a623; margin-bottom: 10px; font-family: JetBrains Mono, monospace;">Session Summary: ' + dateLabel + '</div>';
+
+    // Flow paragraph
+    html += '<p style="margin-bottom: 10px;">';
+    html += 'The ' + dateLabel + ' overnight session recorded ';
+    html += '<strong style="color: #f0f0f2;">' + fmtDollar(totalNotional) + '</strong> in total notional';
+    html += ' across ' + venueNames.length + ' active venue' + (venueNames.length !== 1 ? 's' : '');
+    html += ', with <strong style="color: #f0f0f2;">' + fmtNum(totalTrades) + '</strong> executions';
+    html += ' spanning <strong style="color: #f0f0f2;">' + fmtNum(totalSymbols) + '</strong> unique symbols.';
+    html += '</p>';
+
+    // Direction paragraph
+    if (totalWl > 0 && medianInd != null) {
+        var dirWord = pctUp >= 55 ? 'positive' : (pctUp <= 45 ? 'negative' : 'mixed');
+        html += '<p style="margin-bottom: 10px;">';
+        html += 'Overnight direction was predominantly <strong style="color: ' + (pctUp >= 50 ? '#4caf50' : '#ef5350') + ';">' + dirWord + '</strong>: ';
+        html += pctUp.toFixed(0) + '% of observations indicated upward (' + upCount + ' up, ' + downCount + ' down).';
+        html += ' The median overnight indication across all symbols was ';
+        html += '<strong style="color: ' + (medianInd >= 0 ? '#4caf50' : '#ef5350') + ';">' + (medianInd >= 0 ? '+' : '') + medianInd.toFixed(1) + ' bps</strong>.';
+        html += '</p>';
+    }
+
+    // Sector paragraph
+    if (topSectors.length > 0) {
+        html += '<p style="margin-bottom: 10px;">';
+        html += 'By notional weight, the session was concentrated in <strong style="color: #f0f0f2;">' + topSectors.join(', ') + '</strong>.';
+        if (strongestSector && strongestSector.avgInd != null) {
+            html += ' The strongest overnight indication came from ' + strongestSector.name;
+            html += ' at ' + (strongestSector.avgInd >= 0 ? '+' : '') + strongestSector.avgInd.toFixed(0) + ' bps';
+        }
+        if (weakestSector && weakestSector.avgInd != null && weakestSector.name !== (strongestSector && strongestSector.name)) {
+            html += ', while ' + weakestSector.name;
+            html += ' was weakest at ' + (weakestSector.avgInd >= 0 ? '+' : '') + weakestSector.avgInd.toFixed(0) + ' bps';
+        }
+        html += '.';
+        html += '</p>';
+    }
+
+    // Top movers
+    if (topMovers.length > 0) {
+        html += '<p>';
+        html += 'Largest single-name movers by overnight indication: ';
+        html += '<strong style="color: #f0f0f2;">' + topMovers.join('</strong>, <strong style="color: #f0f0f2;">') + '</strong>.';
+        html += '</p>';
+    }
+
+    html += '</div>';
+    el.innerHTML = html;
 }
 
 // ============================================================================
