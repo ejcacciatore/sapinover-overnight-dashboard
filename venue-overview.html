@@ -533,5 +533,25 @@
 
     <!-- Dashboard Rendering -->
     <script src="venue-overview.js?v=3.1"></script>
+
+    <!-- Iframe height reporting for Sapinover embed -->
+    <script>
+    (function() {
+        function sendHeight() {
+            var height = document.documentElement.scrollHeight;
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'resize', height: height }, '*');
+            }
+        }
+        // Send height on load
+        window.addEventListener('load', sendHeight);
+        // Send height on DOM changes
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(sendHeight).observe(document.body);
+        }
+        // Send height periodically for dynamic content
+        setInterval(sendHeight, 2000);
+    })();
+    </script>
 </body>
 </html>
