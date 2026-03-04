@@ -223,6 +223,19 @@
         .venue-dots .vd { width: 8px; height: 8px; border-radius: 50%; opacity: 0.2; }
         .venue-dots .vd.on { opacity: 1; }
 
+        /* Heatmap table */
+        .heatmap-table td {
+            padding: 10px 14px;
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: opacity 0.15s;
+        }
+        .heatmap-table tr:hover td { opacity: 0.85; }
+        .heatmap-unit {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.5);
+            margin-left: 2px;
+        }
+
         /* Loading */
         #dashboardContent { display: none; }
     </style>
@@ -293,6 +306,24 @@
                     <div style="max-height: 600px; overflow-y: auto;">
                         <table class="venue-table" id="watchlistTable"></table>
                     </div>
+                </div>
+            </div>
+
+            <!-- Section: Notional vs Indication Scatter -->
+            <div class="section">
+                <div class="section-title">Notional vs Overnight Indication</div>
+                <div class="card">
+                    <h3>Each point represents a symbol. Size = share volume. Color = direction.</h3>
+                    <div id="chartScatter" class="chart-box" style="min-height:420px;"></div>
+                </div>
+            </div>
+
+            <!-- Section: Sector Heatmap -->
+            <div class="section">
+                <div class="section-title">Sector Indication Heatmap</div>
+                <div class="card">
+                    <h3>Median overnight indication (bps) by sector and venue. Hover for details.</h3>
+                    <div id="sectorHeatmap"></div>
                 </div>
             </div>
 

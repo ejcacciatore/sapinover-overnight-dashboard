@@ -83,6 +83,8 @@ window.renderDate = function(dateStr) {
     renderVenueVolume(dd);
     renderTopTickers(dd);
     renderWatchlist(dd);
+    renderScatterPlot(dd);
+    renderSectorHeatmap(dd);
     renderSectors(dd);
     renderDirection(dd);
     renderSpreadLiquidity(dd);
@@ -462,6 +464,183 @@ window.sortWatchlist = function(colKey) {
     renderWatchlistTable();
 };
 
+
+// ============================================================================
+// SECTION: NOTIONAL vs INDICATION SCATTER PLOT
+// ============================================================================
+
+function renderScatterPlot(dd) {
+    const raw = dd.watchlist;
+    if (!raw || raw.length === 0) return;
+
+    const el = document.getElementById('chartScatter');
+
+    // Filter to symbols with valid indication and notional > 0
+    const valid = raw.filter(r => r[5] != null && r[1] > 0);
+    if (valid.length === 0) return;
+
+    // Split by direction for color coding
+    const up = valid.filter(r => r[5] >= 0);
+    const down = valid.filter(r => r[5] < 0);
+
+    function makeTrace(data, name, color) {
+        return {
+            x: data.map(r => r[5]),
+            y: data.map(r => r[1]),
+            text: data.map(r =>
+                '<b>' + sym(r[0]) + '</b><br>' +
+                fmtDollar(r[1]) + ' notional<br>' +
+                fmtBps(r[5]) + '<br>' +
+                sectorName(r[7])
+            ),
+            name: name,
+            type: 'scatter',
+            mode: 'markers',
+            marker: {
+                color: color,
+                size: data.map(r => {
+                    var s = Math.log10(Math.max(r[2], 1)) * 2.5;
+                    return Math.max(3, Math.min(16, s));
+                }),
+                opacity: 0.55,
+                line: { width: 0 }
+            },
+            hovertemplate: '%{text}<extra></extra>'
+        };
+    }
+
+    var traces = [
+        makeTrace(up, 'Positive Indication', 'rgba(76,175,80,0.85)'),
+        makeTrace(down, 'Negative Indication', 'rgba(239,83,80,0.85)')
+    ];
+
+    var layout = {
+        ...PLOTLY_LAYOUT,
+        xaxis: {
+            ...PLOTLY_LAYOUT.xaxis,
+            title: { text: 'Overnight Indication (bps)', font: { size: 11, color: '#8a8a96' } },
+            zeroline: true,
+            zerolinecolor: 'rgba(245,166,35,0.25)',
+            zerolinewidth: 1,
+            range: [-350, 350]
+        },
+        yaxis: {
+            ...PLOTLY_LAYOUT.yaxis,
+            title: { text: 'Notional ($)', font: { size: 11, color: '#8a8a96' } },
+            type: 'log'
+        },
+        height: 450,
+        showlegend: true,
+        legend: { ...PLOTLY_LAYOUT.legend, y: -0.18 }
+    };
+
+    Plotly.newPlot(el, traces, layout, PLOTLY_CONFIG);
+    plotlyCharts.push('chartScatter');
+}
+
+// ============================================================================
+// SECTION: SECTOR INDICATION HEATMAP
+// ============================================================================
+
+function heatColor(bps) {
+    // Map indication bps to green (positive) or red (negative) background
+    var clamped = Math.max(-150, Math.min(150, bps));
+    var intensity = Math.abs(clamped) / 150;
+    var alpha = 0.08 + intensity * 0.55;
+    if (clamped >= 0) {
+        return 'rgba(76, 175, 80, ' + alpha + ')';
+    } else {
+        return 'rgba(239, 83, 80, ' + alpha + ')';
+    }
+}
+
+function renderSectorHeatmap(dd) {
+    var hm = dd.sectorHeatmap;
+    if (!hm) return;
+
+    var container = document.getElementById('sectorHeatmap');
+    var venueKeys = ['venue1', 'venue2', 'venue3'];
+
+    // Collect all sectors across all venues
+    var sectorData = {};
+    venueKeys.forEach(function(v) {
+        if (!hm[v]) return;
+        hm[v].forEach(function(row) {
+            // [sectorIdx, medianInd, meanInd, notional, symCount, pctUp]
+            var idx = row[0];
+            if (!sectorData[idx]) sectorData[idx] = {};
+            sectorData[idx][v] = {
+                medianInd: row[1],
+                meanInd: row[2],
+                notional: row[3],
+                count: row[4],
+                pctUp: row[5]
+            };
+        });
+    });
+
+    // Sort sectors by total notional descending
+    var sectorIdxs = Object.keys(sectorData).map(Number);
+    sectorIdxs.sort(function(a, b) {
+        var totalA = venueKeys.reduce(function(sum, v) { return sum + (sectorData[a][v] ? sectorData[a][v].notional : 0); }, 0);
+        var totalB = venueKeys.reduce(function(sum, v) { return sum + (sectorData[b][v] ? sectorData[b][v].notional : 0); }, 0);
+        return totalB - totalA;
+    });
+
+    // Build table
+    var html = '<table class="venue-table heatmap-table"><thead><tr>';
+    html += '<th style="text-align:left">Sector</th>';
+    venueKeys.forEach(function(v) {
+        html += '<th style="text-align:center"><span class="venue-dot ' + VENUES[v].dotClass + '"></span>' + VENUES[v].label + '</th>';
+    });
+    html += '<th style="text-align:center;font-weight:600">Combined</th>';
+    html += '</tr></thead><tbody>';
+
+    sectorIdxs.forEach(function(idx) {
+        html += '<tr>';
+        html += '<td style="text-align:left;font-weight:500;white-space:nowrap;font-size:0.82rem">' + sectorName(idx) + '</td>';
+
+        var allWeighted = 0, allCount = 0, allNotional = 0;
+
+        venueKeys.forEach(function(v) {
+            var d = sectorData[idx] ? sectorData[idx][v] : null;
+            if (d && d.medianInd != null) {
+                var bg = heatColor(d.medianInd);
+                var sign = d.medianInd >= 0 ? '+' : '';
+                html += '<td style="text-align:center;background:' + bg + '"' +
+                    ' title="' + d.count + ' symbols | ' + fmtDollar(d.notional) + ' | ' + d.pctUp + '% up">';
+                html += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:0.8rem;font-weight:500">' +
+                    sign + d.medianInd.toFixed(1) + '</span>';
+                html += '<span class="heatmap-unit"> bps</span></td>';
+
+                allWeighted += d.medianInd * d.count;
+                allCount += d.count;
+                allNotional += d.notional;
+            } else {
+                html += '<td style="text-align:center;color:var(--text-muted);font-size:0.8rem">&mdash;</td>';
+            }
+        });
+
+        // Combined column (weighted average of medians)
+        if (allCount > 0) {
+            var combined = allWeighted / allCount;
+            var bg = heatColor(combined);
+            var sign = combined >= 0 ? '+' : '';
+            html += '<td style="text-align:center;background:' + bg + ';font-weight:600"' +
+                ' title="' + allCount + ' symbols | ' + fmtDollar(allNotional) + '">';
+            html += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:0.8rem">' +
+                sign + combined.toFixed(1) + '</span>';
+            html += '<span class="heatmap-unit"> bps</span></td>';
+        } else {
+            html += '<td style="text-align:center;color:var(--text-muted)">&mdash;</td>';
+        }
+
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
 
 // ============================================================================
 // SECTION 3: SECTOR DISTRIBUTION
