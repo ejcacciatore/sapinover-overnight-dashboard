@@ -270,13 +270,12 @@ function renderSessionSummary(dd, dateStr) {
         html += pctUp.toFixed(0) + '% of observations indicated upward (' + upCount + ' up, ' + downCount + ' down).';
         html += ' The median overnight indication across all symbols was ';
         html += '<strong style="color: ' + (medianInd >= 0 ? '#4caf50' : '#ef5350') + ';">' + (medianInd >= 0 ? '+' : '') + medianInd.toFixed(1) + ' bps</strong>.';
-        // Market direction context: connect ATS signal to open implications
+        // Market direction context: connect ATS observation to positioning
         var pctDown = 100 - pctUp;
         var majorityPct = pctUp >= 50 ? pctUp : pctDown;
-        var leanWord = pctUp >= 55 ? 'bullish' : (pctUp <= 45 ? 'bearish' : 'neutral');
-        var positioningWord = pctUp >= 55 ? 'risk-on positioning' : (pctUp <= 45 ? 'defensive positioning' : 'balanced positioning');
-        var driftDir = pctUp >= 50 ? 'upward' : 'downward';
-        html += ' ATS flow leaned ' + leanWord + ', with ' + majorityPct.toFixed(0) + '% of institutional positions exhibiting ' + driftDir + ' overnight drift, suggesting ' + positioningWord + ' into the open.';
+        var leanWord = pctUp >= 55 ? 'upward-leaning' : (pctUp <= 45 ? 'downward-leaning' : 'neutral');
+        var positioningWord = pctUp >= 55 ? 'growth-oriented positioning' : (pctUp <= 45 ? 'measured positioning' : 'balanced positioning');
+        html += ' Overnight ATS indications were ' + leanWord + ', with ' + majorityPct.toFixed(0) + '% of institutional observations exhibiting directional alignment, consistent with ' + positioningWord + ' into the open.';
         html += '</p>';
     }
 
