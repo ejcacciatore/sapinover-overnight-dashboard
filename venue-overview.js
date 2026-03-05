@@ -234,16 +234,19 @@ function renderSessionSummary(dd, dateStr) {
     var strongestSector = sorted_by_ind.length > 0 ? sorted_by_ind[0] : null;
     var weakestSector = sorted_by_ind.length > 1 ? sorted_by_ind[sorted_by_ind.length - 1] : null;
 
-    // Top 3 movers from watchlist (by absolute indication, index 5)
-    var wlWithInd = wl.filter(function(r) { return r[5] != null && !isNaN(r[5]); });
-    var wlSorted = wlWithInd.slice().sort(function(a, b) {
-        return Math.abs(b[5]) - Math.abs(a[5]);
+    // Top 5 institutional movers from watchlist (notional > $1M, sorted by notional descending)
+    var wlInstitutional = wl.filter(function(r) {
+        return r[1] != null && r[1] > 1e6 && r[5] != null && !isNaN(r[5]);
     });
-    var topMovers = wlSorted.slice(0, 3).map(function(row) {
+    var wlSorted = wlInstitutional.slice().sort(function(a, b) {
+        return b[1] - a[1];
+    });
+    var topMovers = wlSorted.slice(0, 5).map(function(row) {
         var symIdx = row[0];
         var symName = (LOOKUP && LOOKUP.symbols) ? (LOOKUP.symbols[symIdx] || '???') : '???';
+        var notional = row[1];
         var ind = row[5];
-        return symName + ' (' + (ind > 0 ? '+' : '') + ind.toFixed(0) + ' bps)';
+        return symName + ' (' + fmtDollar(notional) + ', ' + (ind > 0 ? '+' : '') + ind.toFixed(0) + ' bps)';
     });
 
     // Build the summary paragraphs
@@ -267,6 +270,13 @@ function renderSessionSummary(dd, dateStr) {
         html += pctUp.toFixed(0) + '% of observations indicated upward (' + upCount + ' up, ' + downCount + ' down).';
         html += ' The median overnight indication across all symbols was ';
         html += '<strong style="color: ' + (medianInd >= 0 ? '#4caf50' : '#ef5350') + ';">' + (medianInd >= 0 ? '+' : '') + medianInd.toFixed(1) + ' bps</strong>.';
+        // Market direction context: connect ATS signal to open implications
+        var pctDown = 100 - pctUp;
+        var majorityPct = pctUp >= 50 ? pctUp : pctDown;
+        var leanWord = pctUp >= 55 ? 'bullish' : (pctUp <= 45 ? 'bearish' : 'neutral');
+        var positioningWord = pctUp >= 55 ? 'risk-on positioning' : (pctUp <= 45 ? 'defensive positioning' : 'balanced positioning');
+        var driftDir = pctUp >= 50 ? 'upward' : 'downward';
+        html += ' ATS flow leaned ' + leanWord + ', with ' + majorityPct.toFixed(0) + '% of institutional positions exhibiting ' + driftDir + ' overnight drift, suggesting ' + positioningWord + ' into the open.';
         html += '</p>';
     }
 
@@ -289,7 +299,7 @@ function renderSessionSummary(dd, dateStr) {
     // Top movers
     if (topMovers.length > 0) {
         html += '<p>';
-        html += 'Largest single-name movers by overnight indication: ';
+        html += 'Institutional movers (>$1M notional): ';
         html += '<strong style="color: #f0f0f2;">' + topMovers.join('</strong>, <strong style="color: #f0f0f2;">') + '</strong>.';
         html += '</p>';
     }
