@@ -1,477 +1,718 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sapinover LLC | Metrics Explanation Guide</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        :root {
-            --bg: #0a0a0a;
-            --card: #141418;
-            --card-border: #1e1e24;
-            --text: #f0f0f2;
-            --text-muted: #8a8a96;
-            --amber: #f5a623;
-            --amber-dim: rgba(245, 166, 35, 0.15);
-            --green: #4caf50;
-            --green-dim: rgba(76, 175, 80, 0.12);
-            --red: #ef5350;
-            --red-dim: rgba(239, 83, 80, 0.12);
-            --blue: #42a5f5;
-            --blue-dim: rgba(66, 165, 245, 0.12);
-            --purple: #ab47bc;
-            --purple-dim: rgba(171, 71, 188, 0.12);
-        }
+      :root {
+        --bg: #050505;
+        --card: rgba(20, 20, 21, 0.6);
+        --card-border: rgba(255, 255, 255, 0.08); /* brand-border */
+        --text: #f0f0f2;
+        --text-muted: #8a8a96;
+        --amber: #00e676; /* neon */
+        --amber-dim: rgba(0, 230, 118, 0.15);
+        --green: #00e676; /* semantic green */
+        --green-dim: rgba(0, 230, 118, 0.12);
+        --red: #ff2a54; /* crimson */
+        --red-dim: rgba(255, 42, 84, 0.12);
+        --blue: #42a5f5;
+        --blue-dim: rgba(66, 165, 245, 0.12);
+        --purple: #ab47bc;
+        --purple-dim: rgba(171, 71, 188, 0.12);
+      }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.7;
-            padding: 0;
-        }
+      body {
+        font-family: "Outfit", sans-serif;
+        background-color: var(--bg);
+        background-image:
+          radial-gradient(
+            circle at top right,
+            rgba(0, 230, 118, 0.05),
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at bottom left,
+            rgba(20, 20, 21, 1),
+            transparent 40%
+          );
+        background-attachment: fixed;
+        color: var(--text);
+        line-height: 1.7;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+      }
 
-        /* Header */
-        .header {
-            background: linear-gradient(180deg, #111115 0%, var(--bg) 100%);
-            border-bottom: 1px solid var(--card-border);
-            padding: 40px 0 32px;
-            text-align: center;
-        }
-        .header img { height: 32px; margin-bottom: 12px; }
-        .header h1 {
-            font-family: 'Source Serif 4', serif;
-            font-size: 2.2rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            margin-bottom: 4px;
-        }
-        .header h1 span { color: var(--amber); }
-        .header .subtitle {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
-        .header .back-link {
-            display: inline-block;
-            margin-top: 16px;
-            color: var(--amber);
-            text-decoration: none;
-            font-size: 0.85rem;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-        .header .back-link:hover { opacity: 1; }
+      /* Header */
+      .header {
+        background: linear-gradient(180deg, #111115 0%, var(--bg) 100%);
+        border-bottom: 1px solid var(--card-border);
+        padding: 40px 0 32px;
+        text-align: center;
+      }
+      .header img {
+        height: 32px;
+        margin-bottom: 12px;
+      }
+      .header h1 {
+        font-family: "Source Serif 4", serif;
+        font-size: 2.2rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-bottom: 4px;
+      }
+      .header h1 span {
+        color: var(--amber);
+      }
+      .header .subtitle {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .header .back-link {
+        display: inline-block;
+        margin-top: 16px;
+        color: var(--amber);
+        text-decoration: none;
+        font-size: 0.85rem;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+      }
+      .header .back-link:hover {
+        opacity: 1;
+      }
 
-        /* Layout */
-        .container { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+      /* Layout */
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+      }
 
-        /* Table of Contents */
-        .toc {
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 28px 32px;
-            margin-bottom: 48px;
-        }
-        .toc h2 {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: var(--text-muted);
-            margin-bottom: 16px;
-        }
+      /* Table of Contents */
+      .toc {
+        background: var(--card);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 28px 32px;
+        margin-bottom: 48px;
+        transition: all 0.5s ease;
+      }
+      .toc:hover {
+        border-color: rgba(0, 230, 118, 0.3);
+        box-shadow: 0 0 20px rgba(0, 230, 118, 0.1);
+      }
+      .toc h2 {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+      }
+      .toc-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 32px;
+      }
+      .toc a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.95rem;
+        padding: 4px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s;
+      }
+      .toc a:hover {
+        color: var(--amber);
+      }
+      .toc .num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.8rem;
+        color: var(--amber);
+        min-width: 24px;
+      }
+
+      /* Section */
+      .section {
+        margin-bottom: 56px;
+      }
+      .section-anchor {
+        display: block;
+        position: relative;
+        top: -80px;
+        visibility: hidden;
+      }
+
+      .section h2 {
+        font-family: "Source Serif 4", serif;
+        font-size: 1.6rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--amber);
+        display: inline-block;
+      }
+      .section h3 {
+        font-size: 1.15rem;
+        font-weight: 500;
+        margin: 28px 0 12px;
+        color: var(--amber);
+      }
+      .section p {
+        color: var(--text-muted);
+        margin-bottom: 16px;
+        font-size: 0.95rem;
+      }
+      .section p strong {
+        color: var(--text);
+      }
+
+      /* Formula boxes */
+      .formula-box {
+        background: var(--card);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--card-border);
+        border-left: 3px solid var(--amber);
+        border-radius: 8px;
+        padding: 20px 24px;
+        margin: 20px 0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.9rem;
+        line-height: 2;
+      }
+      .formula-box .label {
+        font-family: "Outfit", sans-serif;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      .formula-box .formula {
+        color: var(--amber);
+        font-size: 1rem;
+      }
+      .formula-box .note {
+        font-family: "Outfit", sans-serif;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-top: 8px;
+        font-style: italic;
+      }
+
+      /* Example cards */
+      .example {
+        background: var(--card);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 24px;
+        margin: 20px 0;
+        overflow-x: auto;
+      }
+      .example .tag {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+      .tag-up {
+        background: var(--green-dim);
+        color: var(--green);
+      }
+      .tag-down {
+        background: var(--red-dim);
+        color: var(--red);
+      }
+      .tag-consistent {
+        background: var(--green-dim);
+        color: var(--green);
+      }
+      .tag-inconsistent {
+        background: var(--red-dim);
+        color: var(--red);
+      }
+      .tag-info {
+        background: var(--blue-dim);
+        color: var(--blue);
+      }
+      .tag-etf {
+        background: var(--purple-dim);
+        color: var(--purple);
+      }
+
+      .example h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .example .ticker {
+        color: var(--amber);
+      }
+      .example .date {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-bottom: 16px;
+      }
+
+      /* Price flow diagrams */
+      .price-flow {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin: 16px 0;
+        flex-wrap: wrap;
+      }
+      .price-node {
+        background: rgba(20, 20, 21, 0.8);
+        backdrop-filter: blur(4px);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 10px 16px;
+        text-align: center;
+        min-width: 120px;
+      }
+      .price-node .label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+      .price-node .value {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.1rem;
+        font-weight: 500;
+      }
+      .price-arrow {
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        padding: 0 8px;
+        flex-shrink: 0;
+      }
+      .price-arrow.up {
+        color: var(--green);
+      }
+      .price-arrow.down {
+        color: var(--red);
+      }
+
+      /* Calculation steps */
+      .calc-steps {
+        margin: 16px 0;
+        padding: 0;
+        list-style: none;
+      }
+      .calc-steps li {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.88rem;
+        padding: 6px 0;
+        color: var(--text-muted);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      }
+      .calc-steps li:last-child {
+        border-bottom: none;
+      }
+      .calc-steps .result {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .calc-steps .highlight-green {
+        color: var(--green);
+      }
+      .calc-steps .highlight-red {
+        color: var(--red);
+      }
+      .calc-steps .highlight-amber {
+        color: var(--amber);
+      }
+
+      /* Info callouts */
+      .callout {
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 20px 0;
+        font-size: 0.9rem;
+      }
+      .callout-insight {
+        background: var(--amber-dim);
+        backdrop-filter: blur(4px);
+        border-left: 3px solid var(--amber);
+      }
+      .callout-insight strong {
+        color: var(--amber);
+      }
+      .callout-warning {
+        background: var(--red-dim);
+        border-left: 3px solid var(--red);
+      }
+      .callout-warning strong {
+        color: var(--red);
+      }
+      .callout-info {
+        background: var(--blue-dim);
+        border-left: 3px solid var(--blue);
+      }
+      .callout-info strong {
+        color: var(--blue);
+      }
+
+      /* Stats grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin: 20px 0;
+      }
+      .stat-card {
+        background: var(--card);
+        backdrop-filter: blur(8px);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+      .stat-card:hover {
+        border-color: rgba(0, 230, 118, 0.2);
+      }
+      .stat-card .stat-value {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--amber);
+      }
+      .stat-card .stat-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      /* Diagram: visual timeline */
+      .timeline-diagram {
+        background: var(--card);
+        backdrop-filter: blur(8px);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 28px;
+        margin: 24px 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .timeline-bar {
+        height: 4px;
+        background: var(--card-border);
+        border-radius: 2px;
+        margin: 32px 0 24px;
+        position: relative;
+      }
+      .timeline-bar::before {
+        content: "";
+        position: absolute;
+        left: 15%;
+        right: 15%;
+        top: 0;
+        height: 100%;
+        background: var(--amber);
+        border-radius: 2px;
+      }
+      .timeline-labels {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+      }
+      .timeline-label {
+        text-align: center;
+        font-size: 0.8rem;
+      }
+      .timeline-label .time {
+        font-family: "JetBrains Mono", monospace;
+        color: var(--text);
+        font-weight: 500;
+      }
+      .timeline-label .desc {
+        color: var(--text-muted);
+        font-size: 0.72rem;
+      }
+      .timeline-label.active .time {
+        color: var(--amber);
+      }
+
+      /* Summary table */
+      .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+        font-size: 0.88rem;
+      }
+      .summary-table th {
+        text-align: left;
+        padding: 10px 16px;
+        background: #111115;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid var(--card-border);
+      }
+      .summary-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        color: var(--text-muted);
+      }
+      .summary-table td:first-child {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .summary-table .val-pos {
+        color: var(--green);
+        font-family: "JetBrains Mono", monospace;
+      }
+      .summary-table .val-neg {
+        color: var(--red);
+        font-family: "JetBrains Mono", monospace;
+      }
+      .summary-table .val-neutral {
+        color: var(--text);
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Responsive */
+      @media (max-width: 700px) {
         .toc-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px 32px;
+          grid-template-columns: 1fr;
         }
-        .toc a {
-            color: var(--text);
-            text-decoration: none;
-            font-size: 0.95rem;
-            padding: 4px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: color 0.2s;
-        }
-        .toc a:hover { color: var(--amber); }
-        .toc .num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--amber);
-            min-width: 24px;
-        }
-
-        /* Section */
-        .section { margin-bottom: 56px; }
-        .section-anchor { display: block; position: relative; top: -80px; visibility: hidden; }
-
-        .section h2 {
-            font-family: 'Source Serif 4', serif;
-            font-size: 1.6rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid var(--amber);
-            display: inline-block;
-        }
-        .section h3 {
-            font-size: 1.15rem;
-            font-weight: 500;
-            margin: 28px 0 12px;
-            color: var(--amber);
-        }
-        .section p { color: var(--text-muted); margin-bottom: 16px; font-size: 0.95rem; }
-        .section p strong { color: var(--text); }
-
-        /* Formula boxes */
-        .formula-box {
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            border-left: 3px solid var(--amber);
-            border-radius: 8px;
-            padding: 20px 24px;
-            margin: 20px 0;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            line-height: 2;
-        }
-        .formula-box .label {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-        .formula-box .formula { color: var(--amber); font-size: 1rem; }
-        .formula-box .note {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-            margin-top: 8px;
-            font-style: italic;
-        }
-
-        /* Example cards */
-        .example {
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 24px;
-            margin: 20px 0;
-            overflow-x: auto;
-        }
-        .example .tag {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-        }
-        .tag-up { background: var(--green-dim); color: var(--green); }
-        .tag-down { background: var(--red-dim); color: var(--red); }
-        .tag-consistent { background: var(--green-dim); color: var(--green); }
-        .tag-inconsistent { background: var(--red-dim); color: var(--red); }
-        .tag-info { background: var(--blue-dim); color: var(--blue); }
-        .tag-etf { background: var(--purple-dim); color: var(--purple); }
-
-        .example h4 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        .example .ticker { color: var(--amber); }
-        .example .date { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; }
-
-        /* Price flow diagrams */
         .price-flow {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            margin: 16px 0;
-            flex-wrap: wrap;
-        }
-        .price-node {
-            background: #1a1a20;
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 10px 16px;
-            text-align: center;
-            min-width: 120px;
-        }
-        .price-node .label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-        .price-node .value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.1rem;
-            font-weight: 500;
+          flex-direction: column;
+          align-items: flex-start;
         }
         .price-arrow {
-            color: var(--text-muted);
-            font-size: 1.2rem;
-            padding: 0 8px;
-            flex-shrink: 0;
+          transform: rotate(90deg);
+          padding: 4px 0;
         }
-        .price-arrow.up { color: var(--green); }
-        .price-arrow.down { color: var(--red); }
-
-        /* Calculation steps */
-        .calc-steps {
-            margin: 16px 0;
-            padding: 0;
-            list-style: none;
-        }
-        .calc-steps li {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.88rem;
-            padding: 6px 0;
-            color: var(--text-muted);
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-        .calc-steps li:last-child { border-bottom: none; }
-        .calc-steps .result {
-            color: var(--text);
-            font-weight: 500;
-        }
-        .calc-steps .highlight-green { color: var(--green); }
-        .calc-steps .highlight-red { color: var(--red); }
-        .calc-steps .highlight-amber { color: var(--amber); }
-
-        /* Info callouts */
-        .callout {
-            border-radius: 8px;
-            padding: 16px 20px;
-            margin: 20px 0;
-            font-size: 0.9rem;
-        }
-        .callout-insight {
-            background: var(--amber-dim);
-            border-left: 3px solid var(--amber);
-        }
-        .callout-insight strong { color: var(--amber); }
-        .callout-warning {
-            background: var(--red-dim);
-            border-left: 3px solid var(--red);
-        }
-        .callout-warning strong { color: var(--red); }
-        .callout-info {
-            background: var(--blue-dim);
-            border-left: 3px solid var(--blue);
-        }
-        .callout-info strong { color: var(--blue); }
-
-        /* Stats grid */
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin: 20px 0;
+          grid-template-columns: 1fr 1fr;
         }
-        .stat-card {
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 16px;
-            text-align: center;
-        }
-        .stat-card .stat-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--amber);
-        }
-        .stat-card .stat-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
+      }
 
-        /* Diagram: visual timeline */
-        .timeline-diagram {
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 28px;
-            margin: 24px 0;
-            position: relative;
-            overflow: hidden;
-        }
-        .timeline-bar {
-            height: 4px;
-            background: var(--card-border);
-            border-radius: 2px;
-            margin: 32px 0 24px;
-            position: relative;
-        }
-        .timeline-bar::before {
-            content: '';
-            position: absolute;
-            left: 15%;
-            right: 15%;
-            top: 0;
-            height: 100%;
-            background: var(--amber);
-            border-radius: 2px;
-        }
-        .timeline-labels {
-            display: flex;
-            justify-content: space-between;
-            position: relative;
-        }
-        .timeline-label {
-            text-align: center;
-            font-size: 0.8rem;
-        }
-        .timeline-label .time {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text);
-            font-weight: 500;
-        }
-        .timeline-label .desc {
-            color: var(--text-muted);
-            font-size: 0.72rem;
-        }
-        .timeline-label.active .time { color: var(--amber); }
-
-        /* Summary table */
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 16px 0;
-            font-size: 0.88rem;
-        }
-        .summary-table th {
-            text-align: left;
-            padding: 10px 16px;
-            background: #111115;
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            border-bottom: 1px solid var(--card-border);
-        }
-        .summary-table td {
-            padding: 10px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            color: var(--text-muted);
-        }
-        .summary-table td:first-child { color: var(--text); font-weight: 500; }
-        .summary-table .val-pos { color: var(--green); font-family: 'JetBrains Mono', monospace; }
-        .summary-table .val-neg { color: var(--red); font-family: 'JetBrains Mono', monospace; }
-        .summary-table .val-neutral { color: var(--text); font-family: 'JetBrains Mono', monospace; }
-
-        /* Responsive */
-        @media (max-width: 700px) {
-            .toc-grid { grid-template-columns: 1fr; }
-            .price-flow { flex-direction: column; align-items: flex-start; }
-            .price-arrow { transform: rotate(90deg); padding: 4px 0; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 40px 24px;
-            border-top: 1px solid var(--card-border);
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            line-height: 1.8;
-        }
-        .footer a { color: var(--amber); text-decoration: none; }
+      /* Footer */
+      .footer {
+        text-align: center;
+        padding: 40px 24px;
+        border-top: 1px solid var(--card-border);
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        line-height: 1.8;
+      }
+      .footer a {
+        color: var(--amber);
+        text-decoration: none;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <!-- Content container: populated after decryption -->
     <div id="guideContent"></div>
 
     <!-- Login Overlay -->
-    <div id="loginOverlay" style="
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: #0a0a0a; z-index: 9999;
-        display: flex; align-items: center; justify-content: center;
-        font-family: 'Outfit', sans-serif;
-    ">
-        <div style="text-align: center; max-width: 400px; padding: 40px;">
-            <div style="font-weight: 700; font-size: 1.1rem; letter-spacing: 0.25em; text-transform: uppercase; color: #8a8a96; margin-bottom: 8px;">SAPINOVER</div>
-            <h2 style="font-family: 'Source Serif 4', serif; font-size: 1.6rem; color: #f0f0f2; margin-bottom: 6px;">
-                Metrics Guide
-            </h2>
-            <p style="color: #8a8a96; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 32px;">
-                Authorized Access Only
-            </p>
-            <form id="loginForm" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 12px;">
-                <input type="password" id="passwordInput" placeholder="Enter password"
-                    autocomplete="current-password"
-                    style="
-                        padding: 12px 16px; border-radius: 8px;
-                        border: 1px solid #1e1e24; background: #141418;
-                        color: #f0f0f2; font-size: 1rem;
-                        font-family: 'JetBrains Mono', monospace;
-                        outline: none; text-align: center;
-                    "
-                    onfocus="this.style.borderColor='#f5a623'" onblur="this.style.borderColor='#1e1e24'"
-                >
-                <button type="submit" id="loginBtn" style="
-                    padding: 12px 24px; border-radius: 8px; border: none;
-                    background: #f5a623; color: #0a0a0a;
-                    font-size: 0.95rem; font-weight: 600;
-                    cursor: pointer; transition: opacity 0.2s;
-                " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-                    View Guide
-                </button>
-            </form>
-            <p id="loginError" style="color: #ef5350; font-size: 0.85rem; margin-top: 12px; display: none;">
-                Invalid password. Please try again.
-            </p>
-            <p id="loginStatus" style="color: #8a8a96; font-size: 0.82rem; margin-top: 12px; display: none;">
-                Decrypting...
-            </p>
+    <div
+      id="loginOverlay"
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg);
+        background-image: radial-gradient(
+          circle at top right,
+          rgba(0, 230, 118, 0.05),
+          transparent 40%
+        );
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: &quot;Outfit&quot;, sans-serif;
+      "
+    >
+      <div
+        style="
+          text-align: center;
+          max-width: 400px;
+          padding: 40px;
+          background: rgba(20, 20, 21, 0.6);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+        "
+      >
+        <div
+          style="
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: #8a8a96;
+            margin-bottom: 8px;
+          "
+        >
+          SAPINOVER
         </div>
+        <h2
+          style="
+            font-family: &quot;Source Serif 4&quot;, serif;
+            font-size: 1.6rem;
+            color: #f0f0f2;
+            margin-bottom: 6px;
+          "
+        >
+          Metrics Guide
+        </h2>
+        <p
+          style="
+            color: #8a8a96;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+          "
+        >
+          Authorized Access Only
+        </p>
+        <form
+          id="loginForm"
+          onsubmit="handleLogin(event)"
+          style="display: flex; flex-direction: column; gap: 12px"
+        >
+          <input
+            type="password"
+            id="passwordInput"
+            placeholder="Enter password"
+            autocomplete="current-password"
+            style="
+              padding: 12px 16px;
+              border-radius: 8px;
+              border: 1px solid #1e1e24;
+              background: rgba(0, 0, 0, 0.4);
+              color: #f0f0f2;
+              font-size: 1rem;
+              font-family: &quot;JetBrains Mono&quot;, monospace;
+              outline: none;
+              text-align: center;
+            "
+            onfocus="this.style.borderColor = '#00E676'"
+            onblur="this.style.borderColor = '#1e1e24'"
+          />
+          <button
+            type="submit"
+            id="loginBtn"
+            style="
+              padding: 12px 24px;
+              border-radius: 8px;
+              border: none;
+              background: #00e676;
+              color: #0a0a0a;
+              font-size: 0.95rem;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.3s;
+            "
+            onmouseover="
+              this.style.opacity = '0.85';
+              this.style.boxShadow = '0 0 15px rgba(0,230,118,0.3)';
+            "
+            onmouseout="
+              this.style.opacity = '1';
+              this.style.boxShadow = 'none';
+            "
+          >
+            View Guide
+          </button>
+        </form>
+        <p
+          id="loginError"
+          style="
+            color: #ff2a54;
+            font-size: 0.85rem;
+            margin-top: 12px;
+            display: none;
+          "
+        >
+          Invalid password. Please try again.
+        </p>
+        <p
+          id="loginStatus"
+          style="
+            color: #8a8a96;
+            font-size: 0.82rem;
+            margin-top: 12px;
+            display: none;
+          "
+        >
+          Decrypting...
+        </p>
+      </div>
     </div>
 
     <!-- Auth + Decryption Script -->
     <script>
-    const PBKDF2_ITERATIONS = 100000;
+      const PBKDF2_ITERATIONS = 100000;
 
-    async function deriveKey(password, salt) {
+      async function deriveKey(password, salt) {
         const enc = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey(
-            'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+          "raw",
+          enc.encode(password),
+          "PBKDF2",
+          false,
+          ["deriveKey"],
         );
         return crypto.subtle.deriveKey(
-            { name: 'PBKDF2', salt: salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
-            keyMaterial,
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['decrypt']
+          {
+            name: "PBKDF2",
+            salt: salt,
+            iterations: PBKDF2_ITERATIONS,
+            hash: "SHA-256",
+          },
+          keyMaterial,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["decrypt"],
         );
-    }
+      }
 
-    async function decryptGuide(password) {
-        const response = await fetch('metrics-guide.enc');
-        if (!response.ok) throw new Error('Could not load encrypted guide');
+      async function decryptGuide(password) {
+        const response = await fetch("metrics-guide.enc");
+        if (!response.ok) throw new Error("Could not load encrypted guide");
         const b64 = await response.text();
 
         // Decode base64
-        const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
         // Extract salt(16) + iv(12) + ciphertext+tag
         const salt = raw.slice(0, 16);
@@ -481,67 +722,67 @@
         // Derive key and decrypt
         const key = await deriveKey(password, salt);
         const decrypted = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: iv },
-            key,
-            ciphertext
+          { name: "AES-GCM", iv: iv },
+          key,
+          ciphertext,
         );
 
         return new TextDecoder().decode(decrypted);
-    }
+      }
 
-    async function handleLogin(e) {
+      async function handleLogin(e) {
         if (e) e.preventDefault();
-        const password = document.getElementById('passwordInput').value;
+        const password = document.getElementById("passwordInput").value;
         if (!password) return;
 
-        const errorEl = document.getElementById('loginError');
-        const statusEl = document.getElementById('loginStatus');
-        const btnEl = document.getElementById('loginBtn');
+        const errorEl = document.getElementById("loginError");
+        const statusEl = document.getElementById("loginStatus");
+        const btnEl = document.getElementById("loginBtn");
 
-        errorEl.style.display = 'none';
-        statusEl.style.display = 'block';
-        statusEl.textContent = 'Decrypting...';
+        errorEl.style.display = "none";
+        statusEl.style.display = "block";
+        statusEl.textContent = "Decrypting...";
         btnEl.disabled = true;
-        btnEl.textContent = 'Decrypting...';
+        btnEl.textContent = "Decrypting...";
 
         try {
-            const html = await decryptGuide(password);
+          const html = await decryptGuide(password);
 
-            // Save to session (same key as index.html for seamless navigation)
-            sessionStorage.setItem('sp_auth', password);
+          // Save to session (same key as index.html for seamless navigation)
+          sessionStorage.setItem("sp_auth", password);
 
-            // Inject decrypted content
-            document.getElementById('guideContent').innerHTML = html;
+          // Inject decrypted content
+          document.getElementById("guideContent").innerHTML = html;
 
-            // Hide overlay
-            document.getElementById('loginOverlay').style.display = 'none';
+          // Hide overlay
+          document.getElementById("loginOverlay").style.display = "none";
         } catch (err) {
-            errorEl.style.display = 'block';
-            statusEl.style.display = 'none';
-            btnEl.disabled = false;
-            btnEl.textContent = 'View Guide';
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('passwordInput').focus();
+          errorEl.style.display = "block";
+          statusEl.style.display = "none";
+          btnEl.disabled = false;
+          btnEl.textContent = "View Guide";
+          document.getElementById("passwordInput").value = "";
+          document.getElementById("passwordInput").focus();
         }
-    }
+      }
 
-    // Check session on page load (auto-login if already authenticated on dashboard)
-    document.addEventListener('DOMContentLoaded', async () => {
-        const saved = sessionStorage.getItem('sp_auth');
+      // Check session on page load (auto-login if already authenticated on dashboard)
+      document.addEventListener("DOMContentLoaded", async () => {
+        const saved = sessionStorage.getItem("sp_auth");
         if (saved) {
-            try {
-                const html = await decryptGuide(saved);
-                document.getElementById('guideContent').innerHTML = html;
-                document.getElementById('loginOverlay').style.display = 'none';
-            } catch {
-                // Password changed or corrupted; clear and show login
-                sessionStorage.removeItem('sp_auth');
-                document.getElementById('passwordInput').focus();
-            }
+          try {
+            const html = await decryptGuide(saved);
+            document.getElementById("guideContent").innerHTML = html;
+            document.getElementById("loginOverlay").style.display = "none";
+          } catch {
+            // Password changed or corrupted; clear and show login
+            sessionStorage.removeItem("sp_auth");
+            document.getElementById("passwordInput").focus();
+          }
         } else {
-            document.getElementById('passwordInput').focus();
+          document.getElementById("passwordInput").focus();
         }
-    });
+      });
     </script>
-</body>
+  </body>
 </html>
