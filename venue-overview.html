@@ -508,6 +508,27 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
+        // Check URL hash for auto-decrypt key (used by Sapinover embed)
+        var hashParams = new URLSearchParams(window.location.hash.slice(1));
+        var hashKey = hashParams.get('key');
+        if (hashKey) {
+            try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
+            try {
+                var json = await decryptData(hashKey);
+                sessionStorage.setItem('sp_auth', hashKey);
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+                try {
+                    window.initVenueOverview(json);
+                } catch (renderErr) {
+                    console.error('Rendering error:', renderErr);
+                    document.getElementById('dashboardContent').innerHTML =
+                        '<p style="color:#ef5350;padding:40px;text-align:center;">Dashboard rendering error. Check console for details.</p>';
+                }
+                return;
+            } catch(e) { /* hash key invalid, fall through */ }
+        }
+
         const saved = sessionStorage.getItem('sp_auth');
         if (saved) {
             try {

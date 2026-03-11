@@ -252,13 +252,33 @@
 
     // Check session on page load
     document.addEventListener('DOMContentLoaded', async () => {
-        const saved = sessionStorage.getItem('sp_auth');
-        if (saved) {
+        // Check URL hash for auto-decrypt key (used by Sapinover embed)
+        var hashParams = new URLSearchParams(window.location.hash.slice(1));
+        var hashKey = hashParams.get('key');
+        if (hashKey) {
+            try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
             try {
-                const json = await decryptData(saved);
+                var json = await decryptData(hashKey);
+                sessionStorage.setItem('sp_auth', hashKey);
                 document.getElementById('loginOverlay').style.display = 'none';
                 try {
                     window.initDashboard(json);
+                } catch (renderErr) {
+                    console.error('Rendering error:', renderErr);
+                    document.body.innerHTML +=
+                        '<p style="color:#ef5350;padding:40px;text-align:center;">Dashboard rendering error. Check console for details.</p>';
+                }
+                return;
+            } catch(e) { /* hash key invalid, fall through */ }
+        }
+
+        var saved = sessionStorage.getItem('sp_auth');
+        if (saved) {
+            try {
+                var json2 = await decryptData(saved);
+                document.getElementById('loginOverlay').style.display = 'none';
+                try {
+                    window.initDashboard(json2);
                 } catch (renderErr) {
                     console.error('Rendering error:', renderErr);
                     document.body.innerHTML +=

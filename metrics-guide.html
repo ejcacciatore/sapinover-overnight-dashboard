@@ -768,6 +768,20 @@
 
       // Check session on page load (auto-login if already authenticated on dashboard)
       document.addEventListener("DOMContentLoaded", async () => {
+        // Check URL hash for auto-decrypt key (used by Sapinover embed)
+        var hashParams = new URLSearchParams(window.location.hash.slice(1));
+        var hashKey = hashParams.get('key');
+        if (hashKey) {
+            try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch(e) {}
+            try {
+                var html = await decryptGuide(hashKey);
+                sessionStorage.setItem('sp_auth', hashKey);
+                document.getElementById("guideContent").innerHTML = html;
+                document.getElementById("loginOverlay").style.display = "none";
+                return;
+            } catch(e) { /* hash key invalid, fall through */ }
+        }
+
         const saved = sessionStorage.getItem("sp_auth");
         if (saved) {
           try {
