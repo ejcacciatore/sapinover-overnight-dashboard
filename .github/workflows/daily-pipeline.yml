@@ -1,0 +1,130 @@
+name: Daily ATS Pipeline
+
+on:
+  schedule:
+    # 9:15 AM ET (Mon-Fri) = 14:15 UTC (EST) / 13:15 UTC (EDT)
+    # Using 13:15 UTC to cover EDT; pipeline skips non-trading days automatically
+    - cron: '15 13 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Target date (YYYY-MM-DD). Leave empty for today.'
+        required: false
+        type: string
+      skip_pull:
+        description: 'Skip data pull (only re-encrypt and deploy existing data)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Run pipeline
+        env:
+          # Gmail IMAP (for BOATS xlsx download)
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          # Bruce Markets SFTP
+          BRUCE_SFTP_HOST: ${{ secrets.BRUCE_SFTP_HOST }}
+          BRUCE_SFTP_PORT: ${{ secrets.BRUCE_SFTP_PORT }}
+          BRUCE_SFTP_USER: ${{ secrets.BRUCE_SFTP_USER }}
+          BRUCE_SFTP_PASSWORD: ${{ secrets.BRUCE_SFTP_PASSWORD }}
+          # Egnyte API (Bruce fallback)
+          EGNYTE_DOMAIN: ${{ secrets.EGNYTE_DOMAIN }}
+          EGNYTE_ACCESS_TOKEN: ${{ secrets.EGNYTE_ACCESS_TOKEN }}
+          # Microsoft Graph API (BOATS fallback)
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          GRAPH_USER_EMAIL: ${{ secrets.GRAPH_USER_EMAIL }}
+          # Supabase (pipeline status reporting)
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # Encryption password
+          ENCRYPT_PASSWORD: ${{ secrets.ENCRYPT_PASSWORD }}
+          # Pipeline options
+          TARGET_DATE: ${{ inputs.date }}
+          SKIP_PULL: ${{ inputs.skip_pull }}
+        run: |
+          cd pipeline
+          python cloud_orchestrator.py \
+            ${TARGET_DATE:+--date "$TARGET_DATE"} \
+            ${SKIP_PULL:+--skip-pull}
+
+      - name: Check for .enc changes
+        id: check_changes
+        run: |
+          # Copy encrypted files from pipeline output to repo root
+          for f in data.enc venue-overview.enc metrics-guide.enc; do
+            if [ -f "pipeline/output/$f" ]; then
+              cp "pipeline/output/$f" "./$f"
+              echo "Copied $f to repo root"
+            fi
+          done
+
+          # Check if anything changed
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No .enc file changes detected"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected in .enc files"
+          fi
+
+      - name: Commit and push
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "Sapinover Pipeline"
+          git config user.email "pipeline@sapinover.com"
+
+          DATE_LABEL="${TARGET_DATE:-$(date -u +%Y-%m-%d)}"
+
+          git add data.enc venue-overview.enc metrics-guide.enc
+          git commit -m "Auto-deploy data for ${DATE_LABEL}" || true
+          git push origin main
+
+      - name: Report status to Supabase
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          if [ -f "pipeline/output/pipeline_status.json" ]; then
+            STATUS=$(cat pipeline/output/pipeline_status.json)
+            echo "Pipeline status: $STATUS"
+          else
+            echo "No pipeline status file found"
+          fi
+
+      - name: Upload pipeline logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-logs-${{ github.run_number }}
+          path: pipeline/logs/
+          retention-days: 14
