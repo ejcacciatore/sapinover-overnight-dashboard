@@ -2,9 +2,9 @@ name: Daily ATS Pipeline
 
 on:
   schedule:
-    # 9:15 AM ET (Mon-Fri) = 14:15 UTC (EST) / 13:15 UTC (EDT)
-    # Using 13:15 UTC to cover EDT; pipeline skips non-trading days automatically
-    - cron: '15 13 * * 1-5'
+    # Cloud backup runs at 9:30 AM ET (Mon-Fri) = 14:30 UTC (EST) / 13:30 UTC (EDT)
+    # Local Task Scheduler runs at 9:15 AM ET — cloud is safety net if laptop is off
+    - cron: '30 13 * * 1-5'
   workflow_dispatch:
     inputs:
       date:
@@ -41,10 +41,29 @@ jobs:
           cache: 'pip'
           cache-dependency-path: pipeline/requirements.txt
 
+      - name: Check if local pipeline already ran today
+        id: check_stale
+        if: github.event_name == 'schedule'
+        run: |
+          # Check last commit on data.enc — if it was today, local machine already deployed
+          LAST_COMMIT_DATE=$(git log -1 --format=%cd --date=short -- data.enc 2>/dev/null || echo "1970-01-01")
+          TODAY=$(date -u +%Y-%m-%d)
+          echo "Last data.enc update: $LAST_COMMIT_DATE"
+          echo "Today: $TODAY"
+          if [ "$LAST_COMMIT_DATE" = "$TODAY" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Local pipeline already deployed today. Skipping cloud run."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "No local deploy today. Running cloud pipeline."
+          fi
+
       - name: Install dependencies
+        if: steps.check_stale.outputs.skip != 'true'
         run: pip install -r pipeline/requirements.txt
 
       - name: Run pipeline
+        if: steps.check_stale.outputs.skip != 'true'
         env:
           # Gmail IMAP (for BOATS xlsx download)
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
@@ -77,6 +96,7 @@ jobs:
             ${SKIP_PULL:+--skip-pull}
 
       - name: Check for .enc changes
+        if: steps.check_stale.outputs.skip != 'true'
         id: check_changes
         run: |
           # Copy encrypted files from pipeline output to repo root
@@ -97,7 +117,7 @@ jobs:
           fi
 
       - name: Commit and push
-        if: steps.check_changes.outputs.changed == 'true'
+        if: steps.check_stale.outputs.skip != 'true' && steps.check_changes.outputs.changed == 'true'
         run: |
           git config user.name "Sapinover Pipeline"
           git config user.email "pipeline@sapinover.com"
