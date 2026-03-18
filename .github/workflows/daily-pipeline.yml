@@ -2,9 +2,9 @@ name: Daily ATS Pipeline
 
 on:
   schedule:
-    # Cloud backup runs at 9:30 AM ET (Mon-Fri) = 14:30 UTC (EST) / 13:30 UTC (EDT)
-    # Local Task Scheduler runs at 9:15 AM ET — cloud is safety net if laptop is off
-    - cron: '30 13 * * 1-5'
+    # Safety check at 11:30 AM ET (Mon-Fri) = 16:30 UTC (EST) / 15:30 UTC (EDT)
+    # Runs after local 9:15 AM pipeline + 10:30 AM retry task have completed
+    - cron: '30 15 * * 1-5'
   workflow_dispatch:
     inputs:
       date:
@@ -41,29 +41,48 @@ jobs:
           cache: 'pip'
           cache-dependency-path: pipeline/requirements.txt
 
-      - name: Check if local pipeline already ran today
-        id: check_stale
-        if: github.event_name == 'schedule'
+      - name: Check if local pipeline deployed today
+        id: check_deployed
         run: |
-          # Check last commit on data.enc — if it was today, local machine already deployed
-          LAST_COMMIT_DATE=$(git log -1 --format=%cd --date=short -- data.enc 2>/dev/null || echo "1970-01-01")
+          # Check last commit on data.enc and venue-overview.enc
+          # If both were updated today, local pipeline succeeded
+          DATA_DATE=$(git log -1 --format=%cd --date=short -- data.enc 2>/dev/null || echo "1970-01-01")
+          VENUE_DATE=$(git log -1 --format=%cd --date=short -- venue-overview.enc 2>/dev/null || echo "1970-01-01")
           TODAY=$(date -u +%Y-%m-%d)
-          echo "Last data.enc update: $LAST_COMMIT_DATE"
-          echo "Today: $TODAY"
-          if [ "$LAST_COMMIT_DATE" = "$TODAY" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Local pipeline already deployed today. Skipping cloud run."
+
+          echo "data.enc last update: $DATA_DATE"
+          echo "venue-overview.enc last update: $VENUE_DATE"
+          echo "Today's date: $TODAY"
+
+          if [ "$DATA_DATE" = "$TODAY" ] && [ "$VENUE_DATE" = "$TODAY" ]; then
+            echo "deployed=true" >> "$GITHUB_OUTPUT"
+            echo "✓ Local pipeline successfully deployed today"
           else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "No local deploy today. Running cloud pipeline."
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️  Local pipeline may have failed — .enc files not updated today"
           fi
 
-      - name: Install dependencies
-        if: steps.check_stale.outputs.skip != 'true'
+      - name: Alert if local pipeline appears to have failed
+        if: steps.check_deployed.outputs.deployed == 'false'
+        run: |
+          echo "⚠️  ALERT: Local pipeline may not have completed"
+          echo ""
+          echo "TROUBLESHOOTING:"
+          echo "1. Check Windows Task Scheduler on your laptop"
+          echo "2. Verify 'Sapinover_Daily_Pipeline' ran at 9:15 AM ET"
+          echo "3. Check 'Sapinover_Daily_Retry' ran at 10:30 AM ET"
+          echo "4. Verify BOATS/Bruce/Moon files arrived on time"
+          echo "5. Manual fix: Run daily_pull_all.py --staggered-pipeline on laptop"
+          echo "6. Then manually git push to GitHub Pages"
+          echo ""
+          exit 1
+
+      - name: Install dependencies (manual fallback only)
+        if: github.event_name == 'workflow_dispatch'
         run: pip install -r pipeline/requirements.txt
 
-      - name: Run pipeline
-        if: steps.check_stale.outputs.skip != 'true'
+      - name: Run cloud pipeline (manual fallback only)
+        if: github.event_name == 'workflow_dispatch'
         env:
           # Gmail IMAP (for BOATS xlsx download)
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
@@ -95,8 +114,8 @@ jobs:
             ${TARGET_DATE:+--date "$TARGET_DATE"} \
             ${SKIP_PULL:+--skip-pull}
 
-      - name: Check for .enc changes
-        if: steps.check_stale.outputs.skip != 'true'
+      - name: Check for .enc changes (manual fallback only)
+        if: github.event_name == 'workflow_dispatch'
         id: check_changes
         run: |
           # Copy encrypted files from pipeline output to repo root
@@ -116,33 +135,27 @@ jobs:
             echo "Changes detected in .enc files"
           fi
 
-      - name: Commit and push
-        if: steps.check_stale.outputs.skip != 'true' && steps.check_changes.outputs.changed == 'true'
+      - name: Commit and push (manual fallback only)
+        if: github.event_name == 'workflow_dispatch' && steps.check_changes.outputs.changed == 'true'
         run: |
-          git config user.name "Sapinover Pipeline"
-          git config user.email "pipeline@sapinover.com"
+          git config user.name "Sapinover Cloud Backup"
+          git config user.email "cloud-backup@sapinover.com"
 
           DATE_LABEL="${TARGET_DATE:-$(date -u +%Y-%m-%d)}"
 
           git add data.enc venue-overview.enc metrics-guide.enc
-          git commit -m "Auto-deploy data for ${DATE_LABEL}" || true
+          git commit -m "Cloud backup: auto-deploy data for ${DATE_LABEL}" || true
           git push origin main
 
-      - name: Report status to Supabase
-        if: always()
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      - name: Report success
+        if: steps.check_deployed.outputs.deployed == 'true'
         run: |
-          if [ -f "pipeline/output/pipeline_status.json" ]; then
-            STATUS=$(cat pipeline/output/pipeline_status.json)
-            echo "Pipeline status: $STATUS"
-          else
-            echo "No pipeline status file found"
-          fi
+          echo "✓ Cloud safety check PASSED"
+          echo "✓ All .enc files deployed today"
+          echo "✓ Local Windows Task Scheduler pipeline completed successfully"
 
-      - name: Upload pipeline logs
-        if: always()
+      - name: Upload pipeline logs (manual fallback only)
+        if: github.event_name == 'workflow_dispatch' && always()
         uses: actions/upload-artifact@v4
         with:
           name: pipeline-logs-${{ github.run_number }}
