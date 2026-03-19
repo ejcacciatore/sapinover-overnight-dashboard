@@ -89,9 +89,12 @@
 
     <!-- Main Content -->
     <main class="main" id="mainContent">
-        <div class="loading" role="status">
+        <div class="loading" role="status" id="mainLoadingState">
             <div class="loading-spinner"></div>
-            <span>Loading data...</span>
+            <span id="mainLoadingText" style="display:block;color:#8a8a96;font-family:'JetBrains Mono',monospace;font-size:0.85rem;">Loading data...</span>
+            <span id="mainLoadingSubtext" style="display:none;color:#555;font-family:'JetBrains Mono',monospace;font-size:0.72rem;margin-top:8px;">
+                Pulling in big data. Give us a second.
+            </span>
         </div>
     </main>
 
@@ -182,11 +185,22 @@
         );
     }
 
+    function setLoadingMsg(msg, sub) {
+        var el = document.getElementById('mainLoadingText');
+        var subEl = document.getElementById('mainLoadingSubtext');
+        var statusEl = document.getElementById('loginStatus');
+        if (el) el.textContent = msg;
+        if (subEl) { subEl.textContent = sub || ''; subEl.style.display = sub ? 'block' : 'none'; }
+        if (statusEl) statusEl.textContent = msg;
+    }
+
     async function decryptData(password) {
+        setLoadingMsg('Downloading encrypted dataset...', '14 MB of institutional ATS data. Give us a moment.');
         const response = await fetch('data.enc?t=' + Date.now());
         if (!response.ok) throw new Error('Could not load encrypted data');
         const b64 = (await response.text()).trim();
 
+        setLoadingMsg('Decoding payload...', 'Processing ' + (b64.length / 1024 / 1024).toFixed(1) + ' MB');
         // Decode base64
         const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 
@@ -195,14 +209,18 @@
         const iv = raw.slice(16, 28);
         const ciphertext = raw.slice(28);
 
+        setLoadingMsg('Deriving encryption key...', 'AES-256-GCM with PBKDF2 (100K iterations)');
         // Derive key and decrypt
         const key = await deriveKey(password, salt);
+
+        setLoadingMsg('Decrypting ATS dataset...', 'Almost there.');
         const decrypted = await crypto.subtle.decrypt(
             { name: 'AES-GCM', iv: iv },
             key,
             ciphertext
         );
 
+        setLoadingMsg('Parsing dataset...', 'Building 12-tab analytical dashboard.');
         const text = new TextDecoder().decode(decrypted);
         return JSON.parse(text);
     }
