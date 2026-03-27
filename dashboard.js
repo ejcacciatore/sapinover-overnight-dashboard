@@ -156,7 +156,7 @@ function buildDashboard() {
             </div>
             <div class="filter-group">
                 <label>Min Notional ($K)</label>
-                <input type="number" id="filterNotional" value="0" min="0" step="100" onchange="applyFilters()">
+                <input type="number" id="filterNotional" value="10000" min="0" step="100" onchange="applyFilters()">
             </div>
             <div class="filter-group">
                 <label>Data View</label>
@@ -3827,3 +3827,292 @@ document.getElementById('positionModal').addEventListener('click', function(e) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeModal();
 });
+
+// ============================================================================
+// CSV EXPORT
+// ============================================================================
+
+function exportFilteredCSV() {
+    if (!FILTERED_DATA || FILTERED_DATA.length === 0) {
+        alert('No data to export. Apply filters first.');
+        return;
+    }
+    const headers = [
+        'Date','Symbol','Company','Sector','AssetType','Notional','Volume','Executions',
+        'VWAP','PriorClose','NextOpen','NextClose','TimingDiff_bps','RefGap_bps',
+        'TotalGap_bps','GapDirection','DirConsistency','IsOutlier','MarketCap','CapturedAlpha_bps'
+    ];
+    const rows = FILTERED_DATA.map(r => [
+        LOOKUP.dates[r[2]], LOOKUP.symbols[r[0]], LOOKUP.companies[r[1]],
+        LOOKUP.sectors[r[4]], r[3] === 1 ? 'ETF' : 'Stock',
+        r[5], r[6], r[7], r[8], r[9], r[10], r[11],
+        r[12], r[14], r[16], r[17] === 1 ? 'UP' : 'DOWN',
+        r[18] === 1 ? 'TRUE' : 'FALSE', r[19] === 1 ? 'TRUE' : 'FALSE',
+        r[20], r[22]
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sapinover_overnight_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ============================================================================
+// CUSTOM WATCHLIST (localStorage)
+// ============================================================================
+
+let WATCHLIST = JSON.parse(localStorage.getItem('sapinover_watchlist') || '[]');
+
+function saveWatchlist() {
+    localStorage.setItem('sapinover_watchlist', JSON.stringify(WATCHLIST));
+}
+
+function addToWatchlist(symbol) {
+    if (!WATCHLIST.includes(symbol)) {
+        WATCHLIST.push(symbol);
+        saveWatchlist();
+        renderWatchlistPanel();
+    }
+}
+
+function removeFromWatchlist(symbol) {
+    WATCHLIST = WATCHLIST.filter(s => s !== symbol);
+    saveWatchlist();
+    renderWatchlistPanel();
+}
+
+function renderWatchlistPanel() {
+    const container = document.getElementById('watchlist-panel');
+    if (!container) return;
+
+    if (WATCHLIST.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:20px;color:#555;font-size:11px;font-family:monospace;">
+                No symbols in watchlist. Click + on any symbol to add it.
+            </div>`;
+        return;
+    }
+
+    const watchlistData = WATCHLIST.map(sym => {
+        const symIdx = LOOKUP.symbols.indexOf(sym);
+        if (symIdx === -1) return null;
+        const rows = DATA.filter(r => r[0] === symIdx);
+        if (rows.length === 0) return null;
+
+        const latest = rows.sort((a, b) => b[2] - a[2])[0];
+        const avgCa = rows.reduce((s, r) => s + (r[22] || 0), 0) / rows.length;
+        const totalNotional = rows.reduce((s, r) => s + (r[5] || 0), 0);
+        const consistency = rows.filter(r => r[18] === 1).length / rows.length * 100;
+
+        return {
+            symbol: sym,
+            company: LOOKUP.companies[latest[1]] || sym,
+            sector: LOOKUP.sectors[latest[4]] || '-',
+            obs: rows.length,
+            avgCa: avgCa.toFixed(1),
+            totalNotional,
+            consistency: consistency.toFixed(0),
+            latestDate: LOOKUP.dates[latest[2]],
+            latestCa: (latest[22] || 0).toFixed(1),
+        };
+    }).filter(Boolean);
+
+    const fmtN = (v) => v >= 1e9 ? '$' + (v/1e9).toFixed(2) + 'B' : v >= 1e6 ? '$' + (v/1e6).toFixed(0) + 'M' : '$' + v.toFixed(0);
+
+    container.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span style="color:#00c853;font-size:10px;font-family:monospace;letter-spacing:2px;">// WATCHLIST (${WATCHLIST.length})</span>
+            <div>
+                <button onclick="exportWatchlistCSV()" style="background:none;border:1px solid #333;color:#888;font-size:9px;font-family:monospace;padding:3px 8px;cursor:pointer;margin-right:4px;">CSV</button>
+                <button onclick="clearWatchlist()" style="background:none;border:1px solid #333;color:#888;font-size:9px;font-family:monospace;padding:3px 8px;cursor:pointer;">CLEAR</button>
+            </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px;font-family:monospace;">
+            <thead>
+                <tr style="border-bottom:1px solid #222;color:#555;text-transform:uppercase;letter-spacing:1px;">
+                    <th style="text-align:left;padding:4px;">Symbol</th>
+                    <th style="text-align:right;padding:4px;">Obs</th>
+                    <th style="text-align:right;padding:4px;">Avg TD</th>
+                    <th style="text-align:right;padding:4px;">Notional</th>
+                    <th style="text-align:right;padding:4px;">Dir%</th>
+                    <th style="text-align:center;padding:4px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                ${watchlistData.map(d => `
+                    <tr style="border-bottom:1px solid #111;">
+                        <td style="padding:4px;color:#fff;font-weight:bold;">${d.symbol}<br><span style="color:#555;font-size:9px;">${d.sector}</span></td>
+                        <td style="text-align:right;padding:4px;color:#888;">${d.obs}</td>
+                        <td style="text-align:right;padding:4px;color:${parseFloat(d.avgCa) >= 0 ? '#00c853' : '#ff1744'};">${d.avgCa} bps</td>
+                        <td style="text-align:right;padding:4px;color:#888;">${fmtN(d.totalNotional)}</td>
+                        <td style="text-align:right;padding:4px;color:#888;">${d.consistency}%</td>
+                        <td style="text-align:center;padding:4px;"><button onclick="removeFromWatchlist('${d.symbol}')" style="background:none;border:none;color:#ff1744;cursor:pointer;font-size:12px;">x</button></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>`;
+}
+
+function clearWatchlist() {
+    if (confirm('Clear all watchlist symbols?')) {
+        WATCHLIST = [];
+        saveWatchlist();
+        renderWatchlistPanel();
+    }
+}
+
+function exportWatchlistCSV() {
+    if (WATCHLIST.length === 0) return;
+    const headers = ['Symbol','Obs','AvgTimingDiff_bps','TotalNotional','DirConsistency%','AvgRefGap_bps','Sector'];
+    const rows = WATCHLIST.map(sym => {
+        const symIdx = LOOKUP.symbols.indexOf(sym);
+        if (symIdx === -1) return null;
+        const recs = DATA.filter(r => r[0] === symIdx);
+        if (recs.length === 0) return null;
+        const avgCa = recs.reduce((s, r) => s + (r[22] || 0), 0) / recs.length;
+        const avgRg = recs.reduce((s, r) => s + (r[14] || 0), 0) / recs.length;
+        const totalN = recs.reduce((s, r) => s + (r[5] || 0), 0);
+        const cons = recs.filter(r => r[18] === 1).length / recs.length * 100;
+        const sector = LOOKUP.sectors[recs[0][4]] || '';
+        return [sym, recs.length, avgCa.toFixed(1), totalN.toFixed(0), cons.toFixed(1), avgRg.toFixed(1), sector];
+    }).filter(Boolean);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sapinover_watchlist_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ============================================================================
+// SIMILAR SESSION MATCHING
+// ============================================================================
+
+function findSimilarSessions(targetDate) {
+    if (!DATA || !LOOKUP) return [];
+
+    const targetIdx = LOOKUP.dates.indexOf(targetDate);
+    if (targetIdx === -1) return [];
+
+    // Build feature vector for each date
+    function dateFeatures(dateIdx) {
+        const rows = DATA.filter(r => r[2] === dateIdx);
+        if (rows.length === 0) return null;
+        const totalNotional = rows.reduce((s, r) => s + (r[5] || 0), 0);
+        const avgCa = rows.reduce((s, r) => s + (r[22] || 0), 0) / rows.length;
+        const avgRg = rows.reduce((s, r) => s + (r[14] || 0), 0) / rows.length;
+        const dirPct = rows.filter(r => r[18] === 1).length / rows.length;
+        const etfPct = rows.filter(r => r[3] === 1).length / rows.length;
+        const outlierPct = rows.filter(r => r[19] === 1).length / rows.length;
+        const upPct = rows.filter(r => r[17] === 1).length / rows.length;
+        return { totalNotional, avgCa, avgRg, dirPct, etfPct, outlierPct, upPct, obs: rows.length };
+    }
+
+    const targetFeats = dateFeatures(targetIdx);
+    if (!targetFeats) return [];
+
+    // Cosine similarity
+    function cosineSim(a, b) {
+        const keys = ['avgCa', 'avgRg', 'dirPct', 'etfPct', 'outlierPct', 'upPct'];
+        let dot = 0, magA = 0, magB = 0;
+        for (const k of keys) {
+            dot += (a[k] || 0) * (b[k] || 0);
+            magA += (a[k] || 0) ** 2;
+            magB += (b[k] || 0) ** 2;
+        }
+        if (magA === 0 || magB === 0) return 0;
+        return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+    }
+
+    const similarities = [];
+    for (let i = 0; i < LOOKUP.dates.length; i++) {
+        if (i === targetIdx) continue;
+        const feats = dateFeatures(i);
+        if (!feats) continue;
+        const sim = cosineSim(targetFeats, feats);
+        // Get next-day outcome
+        const nextIdx = i + 1 < LOOKUP.dates.length ? i + 1 : null;
+        let nextDayAvgCa = null;
+        if (nextIdx !== null) {
+            const nextRows = DATA.filter(r => r[2] === nextIdx);
+            if (nextRows.length > 0) {
+                nextDayAvgCa = nextRows.reduce((s, r) => s + (r[22] || 0), 0) / nextRows.length;
+            }
+        }
+        similarities.push({
+            date: LOOKUP.dates[i],
+            similarity: sim,
+            features: feats,
+            nextDayAvgCa,
+        });
+    }
+
+    similarities.sort((a, b) => b.similarity - a.similarity);
+    return similarities.slice(0, 5);
+}
+
+function renderSimilarSessions(targetDate) {
+    const matches = findSimilarSessions(targetDate);
+    if (matches.length === 0) return '';
+
+    const fmtN = (v) => v >= 1e9 ? '$' + (v/1e9).toFixed(2) + 'B' : v >= 1e6 ? '$' + (v/1e6).toFixed(0) + 'M' : '$' + v.toFixed(0);
+
+    return `
+        <div style="border:1px solid #1a1a1a;background:#0d0d0d;padding:16px;margin-top:16px;">
+            <p style="color:#00c853;font-size:10px;font-family:monospace;letter-spacing:2px;margin-bottom:12px;">
+                // SIMILAR SESSION MATCHING
+            </p>
+            <p style="color:#555;font-size:9px;font-family:monospace;margin-bottom:8px;">
+                Top 5 historical sessions with similar characteristics to ${targetDate}
+                (cosine similarity on timing differential, ref gap, directional consistency, ETF mix, outlier rate)
+            </p>
+            <table style="width:100%;border-collapse:collapse;font-size:10px;font-family:monospace;">
+                <thead>
+                    <tr style="border-bottom:1px solid #222;color:#555;text-transform:uppercase;letter-spacing:1px;">
+                        <th style="text-align:left;padding:4px;">Date</th>
+                        <th style="text-align:right;padding:4px;">Match</th>
+                        <th style="text-align:right;padding:4px;">Avg TD</th>
+                        <th style="text-align:right;padding:4px;">Dir%</th>
+                        <th style="text-align:right;padding:4px;">Obs</th>
+                        <th style="text-align:right;padding:4px;">Notional</th>
+                        <th style="text-align:right;padding:4px;">Next Day TD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${matches.map(m => `
+                        <tr style="border-bottom:1px solid #111;">
+                            <td style="padding:4px;color:#fff;">${m.date}</td>
+                            <td style="text-align:right;padding:4px;color:#00c853;">${(m.similarity * 100).toFixed(0)}%</td>
+                            <td style="text-align:right;padding:4px;color:${m.features.avgCa >= 0 ? '#00c853' : '#ff1744'};">${m.features.avgCa.toFixed(1)}</td>
+                            <td style="text-align:right;padding:4px;color:#888;">${(m.features.dirPct * 100).toFixed(0)}%</td>
+                            <td style="text-align:right;padding:4px;color:#888;">${m.features.obs}</td>
+                            <td style="text-align:right;padding:4px;color:#888;">${fmtN(m.features.totalNotional)}</td>
+                            <td style="text-align:right;padding:4px;color:${m.nextDayAvgCa !== null ? (m.nextDayAvgCa >= 0 ? '#00c853' : '#ff1744') : '#555'};">
+                                ${m.nextDayAvgCa !== null ? m.nextDayAvgCa.toFixed(1) + ' bps' : '-'}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            ${(() => {
+                const nextDays = matches.filter(m => m.nextDayAvgCa !== null);
+                if (nextDays.length === 0) return '';
+                const avgNext = nextDays.reduce((s, m) => s + m.nextDayAvgCa, 0) / nextDays.length;
+                const upCount = nextDays.filter(m => m.nextDayAvgCa > 0).length;
+                return `<p style="color:#555;font-size:9px;font-family:monospace;margin-top:8px;border-top:1px solid #1a1a1a;padding-top:8px;">
+                    <span style="color:#00c853;">INTEL:</span> Similar sessions averaged
+                    <span style="color:${avgNext >= 0 ? '#00c853' : '#ff1744'};">${avgNext.toFixed(1)} bps</span>
+                    timing differential on the following day (${upCount}/${nextDays.length} positive).
+                </p>`;
+            })()}
+        </div>`;
+}
