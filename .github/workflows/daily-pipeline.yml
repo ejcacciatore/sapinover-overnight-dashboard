@@ -38,8 +38,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-          cache-dependency-path: pipeline/requirements.txt
 
       - name: Check if local pipeline deployed today
         id: check_deployed
