@@ -427,7 +427,7 @@ function renderSummaryTab() {
             <div class="metrics-grid">
                 <div class="metric-card">
                     <div class="metric-value ${getValueClass(avgCapturedAlpha)}">${formatBps(avgCapturedAlpha, true)}</div>
-                    <div class="metric-label">Avg Captured Alpha</div>
+                    <div class="metric-label">Avg Captured Timing Differential</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value ${getValueClass(avgRefGap)}">${formatBps(avgRefGap, true)}</div>
@@ -458,7 +458,7 @@ function renderSummaryTab() {
                             <th>Observations</th>
                             <th>Notional</th>
                             <th>% of Total</th>
-                            <th>Avg Captured Alpha</th>
+                            <th>Avg Captured Timing Differential</th>
                             <th>Continuity Rate</th>
                         </tr>
                     </thead>
@@ -760,7 +760,7 @@ function renderDailyTab() {
             </div>
             <div class="chart-grid">
                 <div class="card">
-                    <h4 class="card-title">Captured Alpha Trend</h4>
+                    <h4 class="card-title">Captured Timing Differential Trend</h4>
                     <div class="chart-container" id="dailyTimingChart"></div>
                 </div>
                 <div class="card">
@@ -783,7 +783,7 @@ function renderDailyTab() {
                     <div class="chart-container" id="dailySectorChart"></div>
                 </div>
                 <div class="card">
-                    <h4 class="card-title">Captured Alpha Distribution</h4>
+                    <h4 class="card-title">Captured Timing Differential Distribution</h4>
                     <div class="chart-container" id="dailyHistogram"></div>
                 </div>
             </div>
@@ -806,7 +806,7 @@ function renderDailyTab() {
                                 <th>Type</th>
                                 <th>Sector</th>
                                 <th class="sortable" onclick="sortDailyTable('notional')">Notional</th>
-                                <th class="sortable" onclick="sortDailyTable('capturedAlpha')">Captured Alpha</th>
+                                <th class="sortable" onclick="sortDailyTable('capturedAlpha')">Captured Timing Differential</th>
                                 <th class="sortable" onclick="sortDailyTable('refGap')">Ref Gap</th>
                                 <th>Gap Dir</th>
                                 <th>Continuity</th>
@@ -854,7 +854,7 @@ function updateDailyDate(date) {
         </div>
         <div class="metric-card">
             <div class="metric-value ${getValueClass(avgCapturedAlpha)}">${formatBps(avgCapturedAlpha, true)}</div>
-            <div class="metric-label">Avg Captured Alpha</div>
+            <div class="metric-label">Avg Captured Timing Differential</div>
         </div>
         <div class="metric-card">
             <div class="metric-value positive">${formatPercent(dirConsistencyRate)}</div>
@@ -898,7 +898,7 @@ function renderDailyTrendCharts() {
         return notionalData.slice(idx - 4, idx + 1).reduce((a, b) => a + b, 0) / 5;
     });
     
-    // Captured Alpha Trend
+    // Captured Timing Differential Trend
     const ctx1 = document.createElement('canvas');
     document.getElementById('dailyTimingChart').innerHTML = '';
     document.getElementById('dailyTimingChart').appendChild(ctx1);
@@ -1201,7 +1201,7 @@ function renderStructureTab() {
                             <th>Leverage Multiple</th>
                             <th>Observations</th>
                             <th>Notional</th>
-                            <th>Avg Captured Alpha</th>
+                            <th>Avg Captured Timing Differential</th>
                             <th>Avg Ref Gap</th>
                             <th>Continuity Rate</th>
                         </tr>
@@ -1225,7 +1225,7 @@ function renderStructureTab() {
                                 <th>Sector</th>
                                 <th>Observations</th>
                                 <th>Notional</th>
-                                <th>Avg Captured Alpha</th>
+                                <th>Avg Captured Timing Differential</th>
                                 <th>Continuity Rate</th>
                             </tr>
                         </thead>
@@ -1500,7 +1500,7 @@ function renderQuadrantTab() {
                             <th>Description</th>
                             <th>Observations</th>
                             <th>Notional</th>
-                            <th>Avg Captured Alpha</th>
+                            <th>Avg Captured Timing Differential</th>
                             <th>Avg Ref Gap</th>
                             <th>Continuity Rate</th>
                         </tr>
@@ -1515,7 +1515,7 @@ function renderQuadrantTab() {
             <div class="section-header">
                 <div class="section-marker"></div>
                 <h3 class="section-title">Position-Level Analysis</h3>
-                <span class="section-subtitle">Top 100 positions by absolute captured alpha</span>
+                <span class="section-subtitle">Top 100 positions by absolute captured timing differential</span>
             </div>
             <div class="table-container">
                 <div class="table-scroll">
@@ -1527,7 +1527,7 @@ function renderQuadrantTab() {
                                 <th>Date</th>
                                 <th>Type</th>
                                 <th>Notional</th>
-                                <th>Captured Alpha</th>
+                                <th>Captured Timing Differential</th>
                                 <th>Ref Gap</th>
                                 <th>VS Open</th>
                                 <th>VS Close</th>
@@ -1635,7 +1635,7 @@ function renderQuadrantTables(quadrants) {
         `;
     }).join('');
     
-    // Position table - top 100 by absolute captured alpha
+    // Position table - top 100 by absolute captured timing differential
     const sorted = [...FILTERED_DATA]
         .sort((a, b) => Math.abs(getCapturedAlpha(b)) - Math.abs(getCapturedAlpha(a)))
         .slice(0, 100);
@@ -1707,7 +1707,7 @@ function renderExplorerTab() {
                             <th>Type</th>
                             <th>Sector</th>
                             <th class="sortable" onclick="sortExplorer('notional')">Notional</th>
-                            <th class="sortable" onclick="sortExplorer('capturedAlpha')">Captured Alpha</th>
+                            <th class="sortable" onclick="sortExplorer('capturedAlpha')">Captured Timing Differential</th>
                             <th class="sortable" onclick="sortExplorer('refGap')">Ref Gap</th>
                             <th>Gap Dir</th>
                             <th>Dir</th>
@@ -1823,7 +1823,7 @@ function exportExplorerCSV() {
     const data = getFilteredExplorerData();
     
     const headers = ['Symbol', 'Company', 'Date', 'Asset Type', 'Sector', 'Notional',
-        'Captured Alpha (bps)', 'Reference Gap (bps)', 'Timing Differential (bps)', 'Gap Direction', 'Directional Consistency'];
+        'Captured Timing Differential (bps)', 'Reference Gap (bps)', 'Timing Differential (bps)', 'Gap Direction', 'Directional Consistency'];
 
     const rows = data.map(d => [
         d.symbol,
@@ -1955,7 +1955,7 @@ function getFeatureValue(d, feat) {
 }
 
 const FEATURE_LABELS = {
-    capturedAlpha: 'Captured Alpha',
+    capturedAlpha: 'Captured Timing Differential',
     timingDiff: 'Timing Diff',
     refGap: 'Reference Gap',
     notional: 'Log Notional',
@@ -2091,7 +2091,7 @@ function runClustering() {
                 <div class="table-scroll">
                     <table>
                         <thead><tr>
-                            <th>Cluster</th><th>Count</th><th>Avg Captured Alpha</th>
+                            <th>Cluster</th><th>Count</th><th>Avg Captured Timing Differential</th>
                             <th>Avg Ref Gap</th><th>Avg Notional</th><th>Consistency</th><th>Top Symbols</th>
                         </tr></thead>
                         <tbody>
@@ -2205,7 +2205,7 @@ function renderCorrelationTab() {
 
     // Correlation Matrix
     const metrics = [
-        { key: 'capturedAlpha', label: 'Captured Alpha', fn: d => getCapturedAlpha(d) },
+        { key: 'capturedAlpha', label: 'Captured Timing Differential', fn: d => getCapturedAlpha(d) },
         { key: 'timingDiff', label: 'Timing Diff', fn: d => getTimingDiff(d) },
         { key: 'refGap', label: 'Ref Gap', fn: d => getRefGap(d) },
         { key: 'totalGap', label: 'Total Gap', fn: d => d.totalGap },
@@ -2391,7 +2391,7 @@ function renderRiskTab() {
             <section class="section">
                 <div class="section-header">
                     <div class="section-marker"></div>
-                    <h3 class="section-title">Captured Alpha Distribution</h3>
+                    <h3 class="section-title">Captured Timing Differential Distribution</h3>
                 </div>
                 <div class="card"><div class="chart-container large" id="riskCaDist"></div></div>
             </section>
@@ -2434,7 +2434,7 @@ function renderRiskTab() {
         mode: 'lines', type: 'scatter', name: 'VaR 95%',
         line: { color: '#f87171', width: 2, dash: 'dot' }
     }], plotlyDarkLayout({
-        xaxis: { title: 'Captured Alpha (bps)', gridcolor: 'rgba(156,163,180,0.08)' },
+        xaxis: { title: 'Captured Timing Differential (bps)', gridcolor: 'rgba(156,163,180,0.08)' },
         yaxis: { title: 'Frequency', gridcolor: 'rgba(156,163,180,0.08)' },
         legend: { font: { size: 10 }, x: 0.75, y: 0.95 },
         bargap: 0.02,
@@ -2539,7 +2539,7 @@ function renderTimeSeriesTab() {
         </div>
         <section class="section">
             <div class="section-header"><div class="section-marker"></div>
-                <h3 class="section-title">Rolling Captured Alpha with Regime Detection</h3>
+                <h3 class="section-title">Rolling Captured Timing Differential with Regime Detection</h3>
             </div>
             <div class="card"><div class="chart-container xlarge" id="regimeChart"></div></div>
         </section>
@@ -2693,7 +2693,7 @@ function updateTimeSeries() {
         data: {
             labels: dowNames,
             datasets: [{
-                label: 'Avg Captured Alpha',
+                label: 'Avg Captured Timing Differential',
                 data: dowBuckets.map(b => mean(b)),
                 backgroundColor: dowBuckets.map(b => mean(b) >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'),
                 borderColor: dowBuckets.map(b => mean(b) >= 0 ? '#34d399' : '#f87171'),
@@ -2897,7 +2897,7 @@ function renderWatchlistComparison() {
 
     Plotly.newPlot('watchlistChart', traces, plotlyDarkLayout({
         xaxis: { title: null, tickangle: -45, tickfont: { size: 9 } },
-        yaxis: { title: 'Captured Alpha (bps)' },
+        yaxis: { title: 'Captured Timing Differential (bps)' },
         legend: { font: { size: 10 }, orientation: 'h', y: 1.1 },
         margin: { l: 55, r: 20, t: 30, b: 60 }
     }), plotlyConfig());
@@ -2905,7 +2905,7 @@ function renderWatchlistComparison() {
 
 function exportScreenerCSV() {
     if (!screenerData.length) return;
-    const headers = ['Symbol', 'Company', 'Type', 'Sector', 'Observations', 'Avg Notional', 'Avg Captured Alpha (bps)',
+    const headers = ['Symbol', 'Company', 'Type', 'Sector', 'Observations', 'Avg Notional', 'Avg Captured Timing Differential (bps)',
         'Median CA (bps)', 'Std Dev', 'Avg Ref Gap (bps)', 'Consistency %'];
     const rows = screenerData.map(s => [
         s.symbol, `"${s.company.replace(/"/g, '""')}"`, s.assetType, `"${s.sector.replace(/"/g, '""')}"`,
@@ -3470,14 +3470,14 @@ function renderMethodologyTab() {
                 Timing Differential = ((Next Open - VWAP) / Prior Close) × 10,000
             </div>
 
-            <p><strong>Captured Alpha (bps)</strong></p>
+            <p><strong>Captured Timing Differential (bps)</strong></p>
             <p>
                 The sign-corrected momentum capture. Measures how much of the directional overnight
                 gap the execution captured. Positive values indicate the momentum trade was profitable
                 (long in an up gap, or short in a down gap):
             </p>
             <div class="formula-box">
-                Captured Alpha = Timing Differential × Gap Sign (+1 for UP, -1 for DOWN)
+                Captured Timing Differential = Timing Differential × Gap Sign (+1 for UP, -1 for DOWN)
             </div>
 
             <p><strong>Total Overnight Gap (bps)</strong></p>
@@ -3689,7 +3689,7 @@ function renderMethodologyTab() {
                 at the 1st and 99th percentiles for chart display. The current bounds are:
             </p>
             <ul>
-                <li>Captured Alpha: ${META.winsor.ca ? formatBps(META.winsor.ca[0]) : '-'} to ${META.winsor.ca ? formatBps(META.winsor.ca[1]) : '-'}</li>
+                <li>Captured Timing Differential: ${META.winsor.ca ? formatBps(META.winsor.ca[0]) : '-'} to ${META.winsor.ca ? formatBps(META.winsor.ca[1]) : '-'}</li>
                 <li>Timing Differential: ${formatBps(META.winsor.td[0])} to ${formatBps(META.winsor.td[1])}</li>
                 <li>Reference Gap: ${formatBps(META.winsor.rg[0])} to ${formatBps(META.winsor.rg[1])}</li>
             </ul>
@@ -3763,7 +3763,7 @@ function showPositionModal(symbol, date) {
                 <div class="val">${formatNumber(d.executions)}</div>
             </div>
             <div class="modal-stat">
-                <strong>Captured Alpha</strong>
+                <strong>Captured Timing Differential</strong>
                 <div class="val ${getValueClass(d.capturedAlpha)}">${formatBps(d.capturedAlpha, true)}</div>
             </div>
             <div class="modal-stat">
